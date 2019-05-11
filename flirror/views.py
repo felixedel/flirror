@@ -54,6 +54,28 @@ class WeatherView(FlirrorMethodView):
     rule = "/weather"
     template_name = "weather.html"
 
+    # TODO Change to template filter registered by the weather module
+    weather_icons = {
+        "01d": "sun",
+        "02d": "cloud-sun",
+        "03d": "cloud",
+        "04d": "cloud-showers-heavy",
+        "09d": "cloud-rain",
+        "10d": "cloud-sun-rain",
+        "11d": "bolt",
+        "13d": "snowflake",
+        "50d": "smog",
+        "01n": "moon",
+        "02n": "cloud-moon",
+        "03n": "cloud",
+        "04n": "cloud-showers-heavy",
+        "09n": "cloud-rain",
+        "10n": "cloud-moon-rain",
+        "11n": "bolt",
+        "13n": "snowflake",
+        "50n": "smog",
+    }
+
     def get(self):
         # Get view-specific settings from config
         settings = current_app.config["MODULES"].get(self.endpoint)
@@ -75,11 +97,14 @@ class WeatherView(FlirrorMethodView):
 
         fc_data = []
         for fc_weather in fc.get_forecast():
-            fc_data.append({
-                "date": fc_weather.get_reference_time(timeformat="date"),
-                "temperature": fc_weather.get_temperature(unit=temp_unit),
-                "status": fc_weather.get_status(),
-            })
+            fc_data.append(
+                {
+                    "date": fc_weather.get_reference_time(timeformat="date"),
+                    "temperature": fc_weather.get_temperature(unit=temp_unit),
+                    "status": fc_weather.get_status(),
+                    "icon_cls": self.weather_icons.get(fc_weather.get_weather_icon_name()),
+                }
+            )
 
         return {
             "town": town,
@@ -89,6 +114,7 @@ class WeatherView(FlirrorMethodView):
             "detailed_status": weather.get_detailed_status(),
             "sunrise_time": weather.get_sunrise_time("iso"),
             "sunset_time": weather.get_sunset_time("iso"),
+            "icon_cls": self.weather_icons.get(weather.get_weather_icon_name()),
             "forecast": fc_data,
         }
 
