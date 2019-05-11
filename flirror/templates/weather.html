@@ -4,51 +4,35 @@
 <div class="container">
     <div class="card weather-card bg-dark text-white text-center">
         <div class="card-body pb-3">
-        <h3 class="card-title font-weight-bold">Ulm, Germany</h3>
-            <p class="card-text"><span class="mr-1">MONDAY</span> May 13, 2019</p>
+        <h3 class="card-title font-weight-bold">{{ town }}</h3>
+            <p class="card-text"><span class="mr-1">{{ date.strftime("%A") | upper }}</span>{{ date.strftime("%b %d, %Y")}}</p>
             <div class="row mb-3">
-                <div class="col-3"></div>
-                <div class="col-3">
+                <div class="col-2"></div>
+                <div class="col-4">
+                    {# TODO Icon based on {{ status }} #}
                     <i class="fas fa-cloud-sun fa-5x mr-2"></i>
                 </div>
-                <div class="col-3">
-                    <h3 class="mt-3 mb-3">29° C</h3>
-                    <p>SUNNY</p>
+                <div class="col-4">
+                    <h3 class="mt-3 mb-3">{{ "%2.0f" % temperature.temp }}° C</h3>
+                    <p>
+                        {{ "%2.0f" % temperature.temp_min }}° C - {{ "%2.0f" % temperature.temp_max }}° C
+                    </p>
+                    <p>{{ detailed_status }}</p>
                 </div>
             </div>
-            <div class="col-3"></div>
+            <div class="col-2"></div>
         </div>
         <div class="row">
+            {% for fc in forecast %}
             <div class="col-2">
-                <p class="small">TUE</p>
+                <p class="small">{{ fc.date.strftime("%a") | upper }}</p>
+                {# TODO Icon based on {{ status }} #}
                 <p><i class="fas fa-sun fa-2x"></i></p>
-                <p class="small">24° C</p>
+                <p class="small">
+                    {{ "%2.0f" % fc.temperature.day }}° C / {{ "%2.0f" % fc.temperature.night }}° C
+                </p>
             </div>
-            <div class="col-2">
-                <p class="small">WED</p>
-                <p><i class="fas fa-sun fa-2x"></i></p>
-                <p class="small">24° C</p>
-            </div>
-            <div class="col-2">
-                <p class="small">THU</p>
-                <p><i class="fas fa-sun fa-2x"></i></p>
-                <p class="small">24° C</p>
-            </div>
-            <div class="col-2">
-                <p class="small">FRI</p>
-                <p><i class="fas fa-cloud-sun-rain fa-2x"></i></p>
-                <p class="small">24° C</p>
-            </div>
-            <div class="col-2">
-                <p class="small">SAT</p>
-                <p><i class="fas fa-snowflake fa-2x"></i></p>
-                <p class="small">24° C</p>
-            </div>
-            <div class="col-2">
-                <p class="small">SUN</p>
-                <p><i class="fas fa-cloud-showers-heavy fa-2x"></i></p>
-                <p class="small">24° C</p>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
