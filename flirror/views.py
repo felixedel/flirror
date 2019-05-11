@@ -1,33 +1,84 @@
+import abc
+
 from flask import current_app, render_template
-
-from flirror import app
-
-
-@app.route("/")
-def index():
-    return render_template("index.html", **current_app.config["MODULES"])
+from flask.views import MethodView
 
 
-@app.route("/weather")
-def weather():
-    # TODO We could keep the name, etc. when changing to a class based approach
-    name = "weather"
-    # Get view-specific settings from config
-    settings = current_app.config["MODULES"].get(name)
-    return render_template("weather.html", **settings)
+class FlirrorMethodView(MethodView):
+    @property
+    @abc.abstractmethod
+    def endpoint(self):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def rule(self):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def template_name(self):
+        pass
+
+    @classmethod
+    def register_url(cls, app, **options):
+        app.add_url_rule(cls.rule, view_func=cls.as_view(cls.endpoint), **options)
+
+    def get_context(self, **kwargs):
+        # Initialize context with meta fields that should be available on all pages
+        # E.g. the flirror version or something like this
+        context = {}
+
+        # Add additionally provided kwargs
+        context = {**context, **kwargs}
+        return context
 
 
-@app.route("/calendar")
-def calendar():
-    name = "calendar"
-    # Get view-specific settings from config
-    settings = current_app.config["MODULES"].get(name)
-    return render_template("calendar.html", **settings)
+class IndexView(FlirrorMethodView):
+
+    endpoint = "index"
+    rule = "/"
+    template_name = "index.html"
+
+    def get(self):
+        context = self.get_context(**current_app.config["MODULES"])
+        return render_template(self.template_name, **context)
 
 
-@app.route("/map")
-def map():
-    name = "map"
-    # Get view-specific settings from config
-    settings = current_app.config["MODULES"].get(name)
-    return render_template("map.html", **settings)
+class WeatherView(FlirrorMethodView):
+
+    endpoint = "weather"
+    rule = "/weather"
+    template_name = "weather.html"
+
+    def get(self):
+        # Get view-specific settings from config
+        settings = current_app.config["MODULES"].get(self.endpoint)
+        context = self.get_context(**settings)
+        return render_template(self.template_name, **context)
+
+
+class CalendarView(FlirrorMethodView):
+
+    endpoint ="calendar"
+    rule = "/calendar"
+    template_name = "calendar.html"
+
+    def get(self):
+        # Get view-specific settings from config
+        settings = current_app.config["MODULES"].get(self.endpoint)
+        context = self.get_context(**settings)
+        return render_template(self.template_name, **context)
+
+
+class MapView(FlirrorMethodView):
+
+    endpoint = "map"
+    rule = "/map"
+    template_name = "map.html"
+
+    def get(self):
+        # Get view-specific settings from config
+        settings = current_app.config["MODULES"].get(self.endpoint)
+        context = self.get_context(**settings)
+        return render_template(self.template_name, **context)
