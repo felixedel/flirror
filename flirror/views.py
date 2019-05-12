@@ -84,16 +84,16 @@ class WeatherView(FlirrorMethodView):
     def get_weather(self, settings):
         api_key = settings.get("api_key")
         language = settings.get("language")
-        town = settings.get("town")
+        city = settings.get("city")
         temp_unit = settings.get("temp_unit")
 
         # Create OWM client
         owm = OWM(API_key=api_key, language=language, version="2.5")
-        obs = owm.weather_at_place(town)
+        obs = owm.weather_at_place(city)
 
         # Get today's weather and weekly forecast
         weather = obs.get_weather()
-        fc = owm.daily_forecast(town, limit=7)
+        fc = owm.daily_forecast(city, limit=7)
 
         fc_data = []
         # Skip the first element as we already have the weather for today
@@ -102,7 +102,7 @@ class WeatherView(FlirrorMethodView):
 
         weather_data = self._parse_weather_data(weather, temp_unit)
 
-        return {"town": town, "weather": weather_data, "forecast": fc_data}
+        return {"city": city, "weather": weather_data, "forecast": fc_data}
 
     def _parse_weather_data(self, weather, temp_unit):
         return {
