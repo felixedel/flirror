@@ -1,0 +1,16 @@
+{% extends "module.html" %}
+
+{% block body %}
+    <div>
+        <h1 class="text-center">Hello Flirror!</h1>
+        <div class="row text-center text-lg-left">
+        {% for module in ["weather", "calendar", "map"] %}
+            <div class="col-lg-4 col-md-4 col-6">
+                <div class="d-block mb-4 h-100 embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="{{ url_for(module) }}"></iframe>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+{% endblock %}

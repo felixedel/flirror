@@ -1,0 +1,12 @@
+{% extends "module.html" %}
+
+{% block body %}
+    <div class="container">
+        <p class="module-text"><i class="far fa-calendar"></i>This could show your calendar...</p>
+        <ul>
+            {% for item in appointments %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}
