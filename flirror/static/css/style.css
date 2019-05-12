@@ -5,3 +5,7 @@ body {
 iframe {
     border-width: 0;
 }
+
+.weather-icon {
+    font-size: 5rem;
+}

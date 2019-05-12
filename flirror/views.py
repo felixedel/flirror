@@ -1,6 +1,4 @@
 import abc
-import functools
-from datetime import datetime
 
 from flask import current_app, render_template
 from flask.views import MethodView
@@ -56,24 +54,24 @@ class WeatherView(FlirrorMethodView):
 
     # TODO Change to template filter registered by the weather module
     weather_icons = {
-        "01d": "sun",
-        "02d": "cloud-sun",
-        "03d": "cloud",
-        "04d": "cloud-showers-heavy",
-        "09d": "cloud-rain",
-        "10d": "cloud-sun-rain",
-        "11d": "bolt",
-        "13d": "snowflake",
-        "50d": "smog",
-        "01n": "moon",
-        "02n": "cloud-moon",
-        "03n": "cloud",
-        "04n": "cloud-showers-heavy",
-        "09n": "cloud-rain",
-        "10n": "cloud-moon-rain",
-        "11n": "bolt",
-        "13n": "snowflake",
-        "50n": "smog",
+        "01d": "wi wi-day-sunny",
+        "02d": "wi wi-day-cloudy",
+        "03d": "wi wi-cloud",
+        "04d": "wi wi-cloudy",
+        "09d": "wi wi-day-showers",
+        "10d": "wi wi-day-rain",
+        "11d": "wi wi-day-thunderstorm",
+        "13d": "wi wi-day-snow",
+        "50d": "wi wi-dust",
+        "01n": "wi wi-night-clear",
+        "02n": "wi-night-alt-cloudy",
+        "03n": "wi wi-cloud",
+        "04n": "wi wi-cloudy",
+        "09n": "wi wi-night-showers-rain",
+        "10n": "wi wi-night-rain",
+        "11n": "wi wi-night-thunderstorm",
+        "13n": "wi wi-night-snow",
+        "50n": "wi wi-dust",
     }
 
     def get(self):
@@ -89,33 +87,34 @@ class WeatherView(FlirrorMethodView):
         town = settings.get("town")
         temp_unit = settings.get("temp_unit")
 
+        # Create OWM client
         owm = OWM(API_key=api_key, language=language, version="2.5")
         obs = owm.weather_at_place(town)
-        weather = obs.get_weather()
 
-        fc = owm.daily_forecast(town, limit=6)
+        # Get today's weather and weekly forecast
+        weather = obs.get_weather()
+        fc = owm.daily_forecast(town, limit=7)
 
         fc_data = []
-        for fc_weather in fc.get_forecast():
-            fc_data.append(
-                {
-                    "date": fc_weather.get_reference_time(timeformat="date"),
-                    "temperature": fc_weather.get_temperature(unit=temp_unit),
-                    "status": fc_weather.get_status(),
-                    "icon_cls": self.weather_icons.get(fc_weather.get_weather_icon_name()),
-                }
-            )
+        # Skip the first element as we already have the weather for today
+        for fc_weather in list(fc.get_forecast())[1:]:
+            fc_data.append(self._parse_weather_data(fc_weather, temp_unit))
 
+        weather_data = self._parse_weather_data(weather, temp_unit)
+
+        return {"town": town, "weather": weather_data, "forecast": fc_data}
+
+    def _parse_weather_data(self, weather, temp_unit):
         return {
-            "town": town,
             "date": weather.get_reference_time(timeformat="date"),
             "temperature": weather.get_temperature(unit=temp_unit),
             "status": weather.get_status(),
             "detailed_status": weather.get_detailed_status(),
             "sunrise_time": weather.get_sunrise_time("iso"),
             "sunset_time": weather.get_sunset_time("iso"),
+            # TODO For the forecast we don't need the "detailed" icon
+            #  (no need to differentiate between day/night)
             "icon_cls": self.weather_icons.get(weather.get_weather_icon_name()),
-            "forecast": fc_data,
         }
 
 

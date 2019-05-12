@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
         <!-- custom css -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+        {% block module_css %}{% endblock %}
         <title>Flirror</title>
     </head>
     <body class="bg-dark text-white">
