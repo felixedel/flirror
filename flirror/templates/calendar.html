@@ -1,12 +1,31 @@
 {% extends "module.html" %}
 
 {% block body %}
-    <div class="container">
-        <p class="module-text"><i class="far fa-calendar"></i>This could show your calendar...</p>
-        <ul>
-            {% for item in events %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
+<div class="container">
+    <div class="card bg-dark text-white">
+        {% for item in events %}
+        <div class="row">
+            <div class="col-3 text-right">
+                <h1><span class="badge badge-secondary">{{ item.start.strftime("%d") }}</span></h1>
+                <h4>{{ item.start.strftime("%b") }}</h4>
+            </div>
+            <div class="col-9">
+                <h6 class="text-uppercase"><strong>{{ item.summary }}</strong></h6>
+                <ul class="list-inline">
+                    <li class="list-inline-item">
+                        <i class="fa fa-calendar" aria-hidden="true"></i> {{ item.start.strftime("%A") }}
+                    </li>
+                    <li class="list-inline-item">
+                        <i class="fa fa-clock" aria-hidden="true"></i> {{ item.start.strftime("%H:%M") }} - {{ item.end.strftime("%H:%M") }}
+                    </li>
+                    <li class="list-inline-item">
+                        <i class="fa fa-location-arrow" aria-hidden="true"></i> Location
+                    </li>
+                </ul>
+                <p>Lorem ipsum dolsit amet, consectetur adipiscing elit</p>
+            </div>
+        </div>
+        {% endfor %}
     </div>
+</div>
 {% endblock %}

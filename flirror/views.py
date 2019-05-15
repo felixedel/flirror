@@ -4,6 +4,7 @@ from datetime import datetime
 import flask
 import google.oauth2.credentials
 import googleapiclient.discovery
+from dateutil.parser import parse as dtparse
 from flask import current_app, render_template
 from flask.views import MethodView
 from pyowm import OWM
@@ -146,8 +147,8 @@ class CalendarView(FlirrorMethodView):
             self.api_service_name, self.api_version, credentials=credentials
         )
 
-        events = self.get_events(service)
-        context = self.get_context(events=events)
+        events, events_json = self.get_events(service)
+        context = self.get_context(events=events, events_json=events_json)
         return render_template(self.template_name, **context)
 
     def get_events(self, api_service):
@@ -159,15 +160,31 @@ class CalendarView(FlirrorMethodView):
             .list(
                 calendarId="primary",
                 timeMin=now,
-                maxResults=10,
+                maxResults=5,
                 singleEvents=True,
                 orderBy="startTime",
             )
             .execute()
         )
         events = events_result.get("items", [])
-        _events = [event["summary"] for event in events]
-        return _events
+        _events = [self._parse_event_data(event) for event in events]
+        return _events, events
+
+    @staticmethod
+    def _parse_event_data(event):
+        start = event["start"].get("dateTime")
+        if start is None:
+            start = event["start"].get("date")
+        end = event["end"].get("dateTime")
+        if end is None:
+            end = event["end"].get("date")
+        return {
+            "summary": event["summary"],
+            # start.date -> whole day
+            # start.dateTime -> specific time
+            "start": dtparse(start),
+            "end": dtparse(end),
+        }
 
 
 class MapView(FlirrorMethodView):
