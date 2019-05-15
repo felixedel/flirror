@@ -4,12 +4,12 @@
 <div class="container">
     <div class="card bg-dark text-white">
         {% for item in events %}
-        <div class="row">
+        <div class="row mb-2">
             <div class="col-3 text-right">
-                <h1><span class="badge badge-secondary">{{ item.start.strftime("%d") }}</span></h1>
-                <h4>{{ item.start.strftime("%b") }}</h4>
+                <h2 class="font-weight-light"><strong>{{ item.start.strftime("%d") }}</strong></h2>
+                <h6 class="text-uppercase">{{ item.start.strftime("%b") }}</h6>
             </div>
-            <div class="col-9">
+            <div class="col-9 align-self-center">
                 <h6 class="text-uppercase"><strong>{{ item.summary }}</strong></h6>
                 <ul class="list-inline">
                     <li class="list-inline-item">
@@ -22,7 +22,6 @@
                         <i class="fa fa-location-arrow" aria-hidden="true"></i> Location
                     </li>
                 </ul>
-                <p>Lorem ipsum dolsit amet, consectetur adipiscing elit</p>
             </div>
         </div>
         {% endfor %}
