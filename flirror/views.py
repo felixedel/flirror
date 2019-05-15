@@ -1,5 +1,9 @@
 import abc
+from datetime import datetime
 
+import flask
+import google.oauth2.credentials
+import googleapiclient.discovery
 from flask import current_app, render_template
 from flask.views import MethodView
 from pyowm import OWM
@@ -124,11 +128,46 @@ class CalendarView(FlirrorMethodView):
     rule = "/calendar"
     template_name = "calendar.html"
 
+    api_scopes = ["https://www.googleapis.com/auth/calendar.readonly"]
+    api_service_name = "calendar"
+    api_version = "v3"
+
     def get(self):
-        # Get view-specific settings from config
-        settings = current_app.config["MODULES"].get(self.endpoint)
-        context = self.get_context(**settings)
+
+        if "oauth2_credentials" not in flask.session:
+            return flask.redirect(flask.url_for("oauth2"))
+
+        # Load credentials from the session
+        credentials = google.oauth2.credentials.Credentials(
+            **flask.session["oauth2_credentials"]
+        )
+
+        service = googleapiclient.discovery.build(
+            self.api_service_name, self.api_version, credentials=credentials
+        )
+
+        events = self.get_events(service)
+        context = self.get_context(events=events)
         return render_template(self.template_name, **context)
+
+    def get_events(self, api_service):
+        # Call the calendar API
+        now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
+        current_app.logger.info("Getting the upcoming 10 events")
+        events_result = (
+            api_service.events()
+            .list(
+                calendarId="primary",
+                timeMin=now,
+                maxResults=10,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+        events = events_result.get("items", [])
+        _events = [event["summary"] for event in events]
+        return _events
 
 
 class MapView(FlirrorMethodView):
