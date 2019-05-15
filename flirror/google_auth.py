@@ -1,7 +1,9 @@
 import os
 
 import flask
-from flask import current_app
+import google.oauth2.credentials
+import requests
+from flask import current_app, jsonify
 from google_auth_oauthlib.flow import Flow
 
 from .views import FlirrorMethodView
@@ -99,3 +101,46 @@ class OAuth2CallbackView(FlirrorMethodView):
             "client_secret": creds.client_secret,
             "scopes": creds.scopes,
         }
+
+
+class OAuth2RevokeView(FlirrorMethodView):
+
+    endpoint = "oauth2revoke"
+    rule = "/oauth2revoke"
+    template_name = None
+
+    def get(self):
+        if "oauth2_credentials" not in flask.session:
+            current_app.logger.debug("No credentials to revoke")
+            return jsonify({"msg": "No credentials to revoke"})
+
+        credentials = google.oauth2.credentials.Credentials(
+            **flask.session["oauth2_credentials"]
+        )
+
+        revoke = requests.post(
+            "https://accounts.google.com/o/oauth2/revoke",
+            params={"token": credentials.token},
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+
+        status_code = getattr(revoke, "status_code")
+        if status_code == 200:
+            current_app.logger.info("Credentials successfully revoked")
+            return jsonify({"msg": "Credentials successfully revoked"})
+
+        current_app.logger.info("An error occurred while revoking credentials")
+        return jsonify({"msg": "An error occurred while revoking credentials"})
+
+
+class Oauth2ClearView(FlirrorMethodView):
+
+    endpoint = "oauth2clear"
+    rule = "/oauth2clear"
+    template_name = None
+
+    def get(self):
+        if "oauth2_credentials" in flask.session:
+            del flask.session["oauth2_credentials"]
+        current_app.logger.info("Credentials have been cleared")
+        return jsonify({"msg": "Credentials have been cleared"})

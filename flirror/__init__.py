@@ -1,6 +1,11 @@
 from flask import Flask
 
-from .google_auth import OAuth2View, OAuth2CallbackView
+from .google_auth import (
+    OAuth2CallbackView,
+    Oauth2ClearView,
+    OAuth2RevokeView,
+    OAuth2View,
+)
 from .views import CalendarView, IndexView, MapView, WeatherView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -23,6 +28,8 @@ def create_app():
     # OAuth 2.0 authentication for Google APIs
     OAuth2View.register_url(app)
     OAuth2CallbackView.register_url(app)
+    OAuth2RevokeView.register_url(app)
+    Oauth2ClearView.register_url(app)
 
     return app
 
