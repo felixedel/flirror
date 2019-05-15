@@ -69,7 +69,7 @@ class WeatherView(FlirrorMethodView):
         "13d": "wi wi-day-snow",
         "50d": "wi wi-dust",
         "01n": "wi wi-night-clear",
-        "02n": "wi-night-alt-cloudy",
+        "02n": "wi wi-night-alt-cloudy",
         "03n": "wi wi-cloud",
         "04n": "wi wi-cloudy",
         "09n": "wi wi-night-showers-rain",
