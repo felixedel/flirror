@@ -6,6 +6,7 @@ from .google_auth import (
     OAuth2RevokeView,
     OAuth2View,
 )
+from .helpers import make_error_handler
 from .views import CalendarView, IndexView, MapView, WeatherView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -30,6 +31,12 @@ def create_app():
     OAuth2CallbackView.register_url(app)
     OAuth2RevokeView.register_url(app)
     Oauth2ClearView.register_url(app)
+
+    # Register error handler to known status codes
+    error_handler = make_error_handler()
+    app.register_error_handler(400, error_handler)
+    app.register_error_handler(403, error_handler)
+    app.register_error_handler(404, error_handler)
 
     return app
 

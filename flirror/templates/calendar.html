@@ -15,12 +15,16 @@
                     <li class="list-inline-item">
                         <i class="fa fa-calendar" aria-hidden="true"></i> {{ item.start.strftime("%A") }}
                     </li>
+                    {% if item.type == "time" %}
                     <li class="list-inline-item">
                         <i class="fa fa-clock" aria-hidden="true"></i> {{ item.start.strftime("%H:%M") }} - {{ item.end.strftime("%H:%M") }}
                     </li>
+                    {% endif %}
+                    {% if item.location %}
                     <li class="list-inline-item">
                         <i class="fa fa-location-arrow" aria-hidden="true"></i> Location
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

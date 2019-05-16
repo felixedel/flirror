@@ -5,9 +5,10 @@ import flask
 import google.oauth2.credentials
 import googleapiclient.discovery
 from dateutil.parser import parse as dtparse
-from flask import current_app, render_template
+from flask import abort, current_app, render_template
 from flask.views import MethodView
 from pyowm import OWM
+from pyowm.exceptions.api_response_error import UnauthorizedError
 
 
 class FlirrorMethodView(MethodView):
@@ -92,9 +93,12 @@ class WeatherView(FlirrorMethodView):
         city = settings.get("city")
         temp_unit = settings.get("temp_unit")
 
-        # Create OWM client
-        owm = OWM(API_key=api_key, language=language, version="2.5")
-        obs = owm.weather_at_place(city)
+        try:
+            # Create OWM client
+            owm = OWM(API_key=api_key, language=language, version="2.5")
+            obs = owm.weather_at_place(city)
+        except UnauthorizedError as e:
+            abort(403, "We are unable to retrieve weather information: {}".format(e))
 
         # Get today's weather and weekly forecast
         weather = obs.get_weather()
@@ -133,8 +137,15 @@ class CalendarView(FlirrorMethodView):
     api_service_name = "calendar"
     api_version = "v3"
 
-    def get(self):
+    # TODO Maybe we could use this also as a fallback if no calendar from the list matched
+    default_calendars = ["primary"]
+    default_max_items = 5
 
+    def get(self):
+        # Get view-specific settings from config
+        settings = current_app.config["MODULES"].get(self.endpoint)
+        calendars = settings["calendars"]
+        max_items = settings.get("max_items", self.default_max_items)
         if "oauth2_credentials" not in flask.session:
             return flask.redirect(flask.url_for("oauth2"))
 
@@ -147,34 +158,56 @@ class CalendarView(FlirrorMethodView):
             self.api_service_name, self.api_version, credentials=credentials
         )
 
-        events, events_json = self.get_events(service)
+        events, events_json = self.get_events(service, calendars, max_items)
         context = self.get_context(events=events, events_json=events_json)
         return render_template(self.template_name, **context)
 
-    def get_events(self, api_service):
-        # Call the calendar API
-        now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
-        current_app.logger.info("Getting the upcoming 10 events")
-        events_result = (
-            api_service.events()
-            .list(
-                calendarId="primary",
-                timeMin=now,
-                maxResults=5,
-                singleEvents=True,
-                orderBy="startTime",
+    def get_events(self, api_service, calendars, max_items):
+        all_events = []
+        # Use the value from config
+        calendar_list = api_service.calendarList().list().execute()
+        calendar_items = calendar_list.get("items")
+        [
+            current_app.logger.info("%s: %s", i["id"], i["summary"])
+            for i in calendar_items
+        ]
+        cals_filtered = [
+            ci for ci in calendar_items if ci["summary"].lower() in calendars
+        ]
+        current_app.logger.info("%s", cals_filtered)
+        if not cals_filtered:
+            # TODO Render error page with message
+            current_app.logger.error("Could not find calendar with names %s", calendars)
+            return
+        for cal_item in cals_filtered:
+            # Call the calendar API
+            now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
+            current_app.logger.info("Getting the upcoming 10 events")
+            events_result = (
+                api_service.events()
+                .list(
+                    calendarId=cal_item["id"],
+                    timeMin=now,
+                    maxResults=max_items,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
             )
-            .execute()
-        )
-        events = events_result.get("items", [])
-        _events = [self._parse_event_data(event) for event in events]
-        return _events, events
+            events = events_result.get("items", [])
+            all_events.extend(self._parse_event_data(event) for event in events)
+
+        # Sort the events from multiple calendars, but ignore the timezone
+        all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
+        return all_events[:max_items], events
 
     @staticmethod
     def _parse_event_data(event):
         start = event["start"].get("dateTime")
+        type = "time"
         if start is None:
             start = event["start"].get("date")
+            type = "day"
         end = event["end"].get("dateTime")
         if end is None:
             end = event["end"].get("date")
@@ -184,6 +217,9 @@ class CalendarView(FlirrorMethodView):
             # start.dateTime -> specific time
             "start": dtparse(start),
             "end": dtparse(end),
+            # The type reflects either whole day events or a specific time span
+            "type": type,
+            "location": event.get("location"),
         }
 
 
