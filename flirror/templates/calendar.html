@@ -1,12 +1,34 @@
 {% extends "module.html" %}
 
 {% block body %}
-    <div class="container">
-        <p class="module-text"><i class="far fa-calendar"></i>This could show your calendar...</p>
-        <ul>
-            {% for item in appointments %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
+<div class="container">
+    <div class="card bg-dark text-white">
+        {% for item in events %}
+        <div class="row mb-2">
+            <div class="col-3 text-right">
+                <h2 class="font-weight-light"><strong>{{ item.start.strftime("%d") }}</strong></h2>
+                <h6 class="text-uppercase">{{ item.start.strftime("%b") }}</h6>
+            </div>
+            <div class="col-9 align-self-center">
+                <h6 class="text-uppercase"><strong>{{ item.summary }}</strong></h6>
+                <ul class="list-inline">
+                    <li class="list-inline-item">
+                        <i class="fa fa-calendar" aria-hidden="true"></i> {{ item.start.strftime("%A") }}
+                    </li>
+                    {% if item.type == "time" %}
+                    <li class="list-inline-item">
+                        <i class="fa fa-clock" aria-hidden="true"></i> {{ item.start.strftime("%H:%M") }} - {{ item.end.strftime("%H:%M") }}
+                    </li>
+                    {% endif %}
+                    {% if item.location %}
+                    <li class="list-inline-item">
+                        <i class="fa fa-location-arrow" aria-hidden="true"></i> Location
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
     </div>
+</div>
 {% endblock %}
