@@ -6,6 +6,7 @@ with open("README.md") as readme:
     long_description = readme.read()
 
 requires = [
+    "click",
     "flask",
     "google-api-python-client",
     "google-auth-httplib2",
@@ -30,6 +31,8 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
-    # TODO entry_points (collect static?)
+    entry_points={
+        "console_scripts": ["flirror-crawler = flirror.crawler.main:main"],
+    },
     # TODO classifiers for PyPI
 )
