@@ -5,6 +5,7 @@ import click
 from flask.config import Config
 
 from flirror import FLIRROR_SETTINGS_ENV
+from flirror.crawler.crawlers import WeatherCrawler
 
 
 LOGGER = logging.getLogger(__name__)
@@ -49,16 +50,23 @@ def main(ctx, verbosity):
 
     # TODO Validate config?
     # Store everything in click's context object to be available for subcommands
-    ctx.obj = {
-        "config": config,
-    }
+    ctx.obj = {"config": config}
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(crawl)
 
 
-def crawl():
+@click.pass_context
+def crawl(ctx):
     LOGGER.info("Hello, Flirror!")
+
+    config = ctx.obj["config"]
+
+    # TODO Look up crawlers from config file
+    for name, crawler_cls in [("weather", WeatherCrawler)]:
+        settings = config["MODULES"].get(name)
+        crawler = crawler_cls(**settings)
+        crawler.crawl()
 
 
 if __name__ == "__main__":
