@@ -1,4 +1,4 @@
-from pony.orm import Database, Optional, ormtypes, Required, set_sql_debug, Set
+from pony.orm import Database, Json, Optional, ormtypes, Required, set_sql_debug, Set
 
 db = Database()
 
@@ -44,6 +44,11 @@ class CalendarEvent(db.Entity):
     location = Optional(str, nullable=True)
 
 
+class Misc(db.Entity):
+    key = Required(str)
+    value = Required(Json)
+
+
 # Connect to the database and create it if it doesn't exist
 db.bind(provider="sqlite", filename="database.sqlite", create_db=True)
 
@@ -51,4 +56,4 @@ db.bind(provider="sqlite", filename="database.sqlite", create_db=True)
 db.generate_mapping(create_tables=True)
 
 # Activate pony's debug mode
-set_sql_debug(True)
+# set_sql_debug(True)

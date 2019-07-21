@@ -1,14 +1,24 @@
 import logging
+import os
 from datetime import datetime
+from time import time
 
 import google.oauth2.credentials
 import googleapiclient.discovery
+import requests
 from dateutil.parser import parse as dtparse
+from google_auth_oauthlib.flow import Flow
 from pony.orm import db_session, desc, select
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-from flirror.database import CalendarEvent, Oauth2Credentials, Weather, WeatherForecast
+from flirror.database import (
+    CalendarEvent,
+    Misc,
+    Oauth2Credentials,
+    Weather,
+    WeatherForecast,
+)
 from flirror.exceptions import CrawlerDataError
 
 LOGGER = logging.getLogger(__name__)
@@ -94,20 +104,33 @@ class CalendarCrawler:
     API_SERVICE_NAME = "calendar"
     API_VERSION = "v3"
 
+    SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+    GOOGLE_OAUTH_ACCESS_URL = "https://accounts.google.com/o/oauth2/device/code"
+    GOOGLE_OAUTH_REFRESH_URL = "https://www.googleapis.com/oauth2/v4/token"
+
     def __init__(self, calendars, max_items=DEFAULT_MAX_ITEMS):
         self.calendars = calendars
         self.max_items = max_items
-        # TODO Make the smarmirror host and port configurable and get it from the config
-        #   We need it to refresh the google oauth token if expired
-        self.flirror_host = "localhost:5000"
 
     def crawl(self):
+        self.ask_for_access()
+        return
+        cred = self.authenticate()
+        if cred is None:
+            LOGGER.warning("Authentication failed. Cannot retrieve calendar data")
+            return
+            raise CrawlerDataError(
+                "Authentication failed. Cannot retrieve calendar data"
+            )
+
+        # TODO Could we get rid of flask in here somehow?
+        res = requests.get(self.flirror_oauth_url)
+        # TODO Check if the response was successfull, apart from that the token
+        #  should then be stored in the sqlite database
+
         cred = self.get_credentials()
-        # TODO Retrieve a new token, if none could be found or the one found is
-        # expired (got 403 from the google API)
-        #   if "oauth2_credentials" not in flask.session:
-        #     return flask.redirect(flask.url_for("oauth2"))
-        # NOTE: Call the {flirror_host}/oauth2 endpoint with requests
+        if cred is None:
+            raise CrawlerDataError("Unable to refresh Google OAuth token")
 
         credentials = google.oauth2.credentials.Credentials(
             client_id=cred.client_id,
@@ -195,3 +218,97 @@ class CalendarCrawler:
             desc(Oauth2Credentials.date)
         ):
             return credentials
+
+    @db_session
+    def authenticate(self):
+        cred = self.get_credentials()
+        if cred is None:
+            LOGGER.warning("No credentials found, refreshing tokens")
+        flow = self._get_oauth_flow()
+
+        # Get device code from database
+        query = Misc.select(lambda m: m.key == "goauth_device_code")
+        # TODO If nothing could be found -> ask_for_access()
+        device_code = query.first().value
+
+        data = {
+            "client_id": flow.client_config["client_id"],
+            "client_secret": flow.client_config["client_secret"],
+            "code": device_code,
+            "grant_type": "http://oauth.net/grant_type/device/1.0",
+        }
+
+        res = requests.post(self.GOOGLE_OAUTH_REFRESH_URL, data=data)
+        # TODO Catch error if user did not grant access yet
+        #  428
+        #  b'{\n  "error": "authorization_pending",\n
+        #  "error_description": "Precondition Failed"\n}'
+        LOGGER.info(res.status_code)
+        LOGGER.info(res.content)
+        res_json = res.json()
+
+    @db_session
+    def ask_for_access(self):
+        LOGGER.debug("Checking if device code is already available")
+        device = None
+        query = Misc.select(lambda m: m.key == "google_oauth_device")
+        device_obj = query.first()
+
+        # If nothing could be found, we need to request a new one
+        if device_obj is None:
+            LOGGER.debug("No device code found, requesting a new one")
+        else:
+            # Check if device code is still valid
+            now = time()
+            if device_obj.value["expires_in"] >= now:
+                LOGGER.debug("Device code found, but expired. Requesting a new one")
+            else:
+                device = device_obj.value
+
+        # We use None as indicator for a missing or expired device
+        if device is None:
+            device = self._ask_for_access()
+
+        LOGGER.info(
+            "Please visit '%s' and enter '%s'",
+            device["verification_url"],
+            device["user_code"],
+        )
+        # TODO Show a QR code pointing to the URL + entering the code
+
+    def _ask_for_access(self):
+        # Store current timestamp to calculate an absolute expiry date
+        now = time()
+
+        flow = self._get_oauth_flow()
+        data = {
+            "client_id": flow.client_config["client_id"],
+            "scope": " ".join(self.SCOPES),
+        }
+
+        res = requests.post(self.GOOGLE_OAUTH_ACCESS_URL, data=data)
+        LOGGER.info(res.status_code)
+        LOGGER.info(res.content)
+
+        # TODO Error handling (e.g. offline)?
+        value = res.json()
+        # Calculate an absolute expiry timestamp for simpler evaluation
+        value["expires_in"] += now
+        # Store the device in the database for later usage
+        Misc(key="google_oauth_device", value=value)
+        return value
+
+    def _get_oauth_flow(self):
+        client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
+        if client_secret_file is None:
+            LOGGER.warning(
+                "Environment variable 'GOOGLE_OAUTH_CLIENT_SECRET' "
+                "must be set and point to a valid client-secret.json file"
+            )
+            return
+
+        # Let the flow creation parse the client_secret file
+        flow = Flow.from_client_secrets_file(client_secret_file, scopes=self.SCOPES)
+        LOGGER.info(flow.client_config["client_id"])
+        LOGGER.info(flow)
+        return flow

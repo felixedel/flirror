@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime
 
@@ -11,6 +12,8 @@ from pony.orm import db_session
 from .database import Oauth2Credentials
 from .views import FlirrorMethodView
 
+
+LOGGER = logging.getLogger(__name__)
 
 # This OAuth 2.0 access scope allows for full read/write access to the
 # authenticated user's account and requires requests to use an SSL connection.
