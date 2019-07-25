@@ -7,8 +7,9 @@ import googleapiclient.discovery
 from dateutil.parser import parse as dtparse
 from flask import abort, current_app, render_template
 from flask.views import MethodView
-from pyowm import OWM
-from pyowm.exceptions.api_response_error import UnauthorizedError
+from pony.orm import db_session, desc, select
+
+from flirror.database import Weather, WeatherForecast
 
 
 class FlirrorMethodView(MethodView):
@@ -59,72 +60,26 @@ class WeatherView(FlirrorMethodView):
     template_name = "weather.html"
 
     # TODO Change to template filter registered by the weather module
-    weather_icons = {
-        "01d": "wi wi-day-sunny",
-        "02d": "wi wi-day-cloudy",
-        "03d": "wi wi-cloud",
-        "04d": "wi wi-cloudy",
-        "09d": "wi wi-day-showers",
-        "10d": "wi wi-day-rain",
-        "11d": "wi wi-day-thunderstorm",
-        "13d": "wi wi-day-snow",
-        "50d": "wi wi-dust",
-        "01n": "wi wi-night-clear",
-        "02n": "wi wi-night-alt-cloudy",
-        "03n": "wi wi-cloud",
-        "04n": "wi wi-cloudy",
-        "09n": "wi wi-night-showers-rain",
-        "10n": "wi wi-night-rain",
-        "11n": "wi wi-night-thunderstorm",
-        "13n": "wi wi-night-snow",
-        "50n": "wi wi-dust",
-    }
-
     def get(self):
         # Get view-specific settings from config
         settings = current_app.config["MODULES"].get(self.endpoint)
-        weather_data = self.get_weather(settings)
-        context = self.get_context(**weather_data)
+        weather, forecasts = self.get_weather(settings)
+        context = self.get_context(weather=weather, forecasts=forecasts)
         return render_template(self.template_name, **context)
 
+    @db_session
     def get_weather(self, settings):
-        api_key = settings.get("api_key")
-        language = settings.get("language")
+        # TODO Use the city as where clause in the SQL statement
         city = settings.get("city")
-        temp_unit = settings.get("temp_unit")
 
-        try:
-            # Create OWM client
-            owm = OWM(API_key=api_key, language=language, version="2.5")
-            obs = owm.weather_at_place(city)
-        except UnauthorizedError as e:
-            abort(403, "We are unable to retrieve weather information: {}".format(e))
-
-        # Get today's weather and weekly forecast
-        weather = obs.get_weather()
-        fc = owm.daily_forecast(city, limit=7)
-
-        fc_data = []
-        # Skip the first element as we already have the weather for today
-        for fc_weather in list(fc.get_forecast())[1:]:
-            fc_data.append(self._parse_weather_data(fc_weather, temp_unit))
-
-        weather_data = self._parse_weather_data(weather, temp_unit)
-
-        return {"city": city, "weather": weather_data, "forecast": fc_data}
-
-    def _parse_weather_data(self, weather, temp_unit):
-        return {
-            "date": weather.get_reference_time(timeformat="date"),
-            "temperature": weather.get_temperature(unit=temp_unit),
-            "status": weather.get_status(),
-            "detailed_status": weather.get_detailed_status(),
-            "sunrise_time": weather.get_sunrise_time("iso"),
-            "sunset_time": weather.get_sunset_time("iso"),
-            # TODO For the forecast we don't need the "detailed" icon
-            #  (no need to differentiate between day/night)
-            "icon_cls": self.weather_icons.get(weather.get_weather_icon_name()),
-        }
+        for weather in select(w for w in Weather if w.city == city).order_by(
+            desc(Weather.date)
+        ):
+            print(weather.city)
+            # TODO Simply return the first weather we found
+            # NOTE Directly return the full list of forecasts, because it needs
+            # and active db_session to get it.
+            return weather, list(weather.forecasts)
 
 
 class CalendarView(FlirrorMethodView):
