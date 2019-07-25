@@ -46,6 +46,14 @@ class OAuth2View(FlirrorMethodView):
 
         # Store the state so the callback can verify the auth server response
         flask.session["oauth2_state"] = state
+        # TODO (felix): Since a few days, the Google API is responding with:
+        #   oauthlib.oauth2.rfc6749.errors.InvalidGrantError: (invalid_grant) Missing
+        #   code verifier.
+        # when trying to authenticate.
+        # Following this answer on Stackoverflow, we could simply store the verify code
+        # in the flask session and use it during the refresh.
+        # https://stackoverflow.com/questions/56555687/oauth-throws-missing-code-validator-in-google-oauth2
+        flask.session["oauth2_code_verifier"] = flow.code_verifier
 
         # TODO (felix): Hack to allow oauth token transport without https
         os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -77,6 +85,8 @@ class OAuth2CallbackView(FlirrorMethodView):
             client_secret_file, scopes=SCOPES, state=state
         )
         flow.redirect_uri = flask.url_for("oauth2callback", _external=True)
+        # Get the code verifier from the session and provide it in the Flow
+        flow.code_verifier = flask.session["oauth2_code_verifier"]
 
         # Use the authorization server's response to fetch the OAuth 2.0 tokens
         authorization_response = flask.request.url
