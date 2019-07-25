@@ -1,11 +1,14 @@
 import logging
 from datetime import datetime
 
-from pony.orm import db_session
+import google.oauth2.credentials
+import googleapiclient.discovery
+from dateutil.parser import parse as dtparse
+from pony.orm import db_session, desc, select
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-from flirror.database import Weather, WeatherForecast
+from flirror.database import Oauth2Credentials, Weather, WeatherForecast
 from flirror.exceptions import CrawlerDataError
 
 LOGGER = logging.getLogger(__name__)
@@ -80,3 +83,106 @@ class WeatherCrawler:
             #  (no need to differentiate between day/night)
             "icon": forecast.get_weather_icon_name(),
         }
+
+
+class CalendarCrawler:
+
+    DEFAULT_MAX_ITEMS = 5
+    # TODO Maybe we could use this also as a fallback if no calendar from the list matched
+    DEFAULT_CALENDAR = "primary"
+
+    API_SERVICE_NAME = "calendar"
+    API_VERSION = "v3"
+
+    def __init__(self, calendars, max_items=DEFAULT_MAX_ITEMS):
+        self.calendars = calendars
+        self.max_items = max_items
+        # TODO Make the smarmirror host and port configurable and get it from the config
+        #   We need it to refresh the google oauth token if expired
+        self.flirror_host = "localhost:5000"
+
+    def crawl(self):
+        cred = self.get_credentials
+        # TODO Retrieve a new token, if none could be found or the one found is
+        # expired (got 403 from the google API)
+        #   if "oauth2_credentials" not in flask.session:
+        #     return flask.redirect(flask.url_for("oauth2"))
+        # NOTE: Call the {flirror_host}/oauth2 endpoint with requests
+
+        credentials = google.oauth2.credentials.Credentials(
+            client_id=cred.client_id,
+            client_secret=cred.client_secret,
+            token=cred.token,
+            token_uri=cred.token_uri,
+        )
+
+        service = googleapiclient.discovery.build(
+            self.API_SERVICE_NAME, self.API_VERSION, credentials=credentials
+        )
+
+        calendar_list = service.calendarList().list().execute()
+        calendar_items = calendar_list.get("items")
+
+        [LOGGER.info("%s: %s", i["id"], i["summary"]) for i in calendar_items]
+
+        cals_filtered = [
+            ci for ci in calendar_items if ci["summary"].lower() in self.calendars
+        ]
+        if not cals_filtered:
+            raise CrawlerDataError(
+                "Could not find calendar with names {}".format(self.calendars)
+            )
+
+        all_events = []
+        for cal_item in cals_filtered:
+            # Call the calendar API
+            now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
+            LOGGER.info("Getting the upcoming 10 events")
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=cal_item["id"],
+                    timeMin=now,
+                    maxResults=self.max_items,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
+            )
+            events = events_result.get("items", [])
+            all_events.extend(self._parse_event_data(event) for event in events)
+
+        # Sort the events from multiple calendars, but ignore the timezone
+        all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
+        return all_events[:self.max_items], events
+
+    @staticmethod
+    def _parse_event_data(event):
+        start = event["start"].get("dateTime")
+        type = "time"
+        if start is None:
+            start = event["start"].get("date")
+            type = "day"
+        end = event["end"].get("dateTime")
+        if end is None:
+            end = event["end"].get("date")
+        return {
+            "summary": event["summary"],
+            # start.date -> whole day
+            # start.dateTime -> specific time
+            "start": dtparse(start),
+            "end": dtparse(end),
+            # The type reflects either whole day events or a specific time span
+            "type": type,
+            "location": event.get("location"),
+        }
+
+    @staticmethod
+    @db_session
+    def get_credentials():
+        # TODO There should only be one valid credentials entry in the database.
+        #   How can we achieve this in a straight-forward way?
+        for credentials in select(c for c in Oauth2Credentials).order_by(
+            desc(Oauth2Credentials.date)
+        ):
+            return credentials
