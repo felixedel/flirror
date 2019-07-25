@@ -1,4 +1,4 @@
-from pony.orm import Database, ormtypes, Required, set_sql_debug, Set
+from pony.orm import Database, Optional, ormtypes, Required, set_sql_debug, Set
 
 db = Database()
 
@@ -26,6 +26,14 @@ class WeatherForecast(WeatherBasic):
     temp_night = Required(float)
     # foreign-key relation to weather
     weather = Required(Weather)
+
+
+class Oauth2Credentials(db.Entity):
+    date = Required(ormtypes.datetime)
+    client_id = Required(str)
+    client_secret = Required(str)
+    token = Required(str)
+    token_uri = Required(str)
 
 
 # Connect to the database and create it if it doesn't exist

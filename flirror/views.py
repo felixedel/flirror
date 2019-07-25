@@ -9,7 +9,7 @@ from flask import abort, current_app, render_template
 from flask.views import MethodView
 from pony.orm import db_session, desc, select
 
-from flirror.database import Weather, WeatherForecast
+from flirror.database import Oauth2Credentials, Weather, WeatherForecast
 
 
 class FlirrorMethodView(MethodView):
@@ -96,17 +96,29 @@ class CalendarView(FlirrorMethodView):
     default_calendars = ["primary"]
     default_max_items = 5
 
+    @db_session
+    def get_credentials(self):
+        for credentials in select(c for c in Oauth2Credentials).order_by(
+            desc(Oauth2Credentials.date)
+        ):
+            return credentials
+
     def get(self):
         # Get view-specific settings from config
         settings = current_app.config["MODULES"].get(self.endpoint)
         calendars = settings["calendars"]
         max_items = settings.get("max_items", self.default_max_items)
-        if "oauth2_credentials" not in flask.session:
-            return flask.redirect(flask.url_for("oauth2"))
 
-        # Load credentials from the session
+        cred = self.get_credentials()
+        # TODO Retrieve a new token, if none could be found
+        #   if "oauth2_credentials" not in flask.session:
+        #     return flask.redirect(flask.url_for("oauth2"))
+
         credentials = google.oauth2.credentials.Credentials(
-            **flask.session["oauth2_credentials"]
+            client_id=cred.client_id,
+            client_secret=cred.client_secret,
+            token=cred.token,
+            token_uri=cred.token_uri
         )
 
         service = googleapiclient.discovery.build(
