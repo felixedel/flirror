@@ -5,7 +5,7 @@ import click
 from flask.config import Config
 
 from flirror import FLIRROR_SETTINGS_ENV
-from flirror.crawler.crawlers import WeatherCrawler
+from flirror.crawler.crawlers import CalendarCrawler, WeatherCrawler
 
 
 LOGGER = logging.getLogger(__name__)
@@ -63,7 +63,10 @@ def crawl(ctx):
     config = ctx.obj["config"]
 
     # TODO Look up crawlers from config file
-    for name, crawler_cls in [("weather", WeatherCrawler)]:
+    for name, crawler_cls in [
+        ("weather", WeatherCrawler),
+        ("calendar", CalendarCrawler),
+    ]:
         settings = config["MODULES"].get(name)
         crawler = crawler_cls(**settings)
         crawler.crawl()

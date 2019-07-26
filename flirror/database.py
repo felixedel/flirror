@@ -36,6 +36,14 @@ class Oauth2Credentials(db.Entity):
     token_uri = Required(str)
 
 
+class CalendarEvent(db.Entity):
+    summary = Required(str)
+    start = Required(ormtypes.datetime)
+    end = Required(ormtypes.datetime)
+    type = Required(str)
+    location = Optional(str)
+
+
 # Connect to the database and create it if it doesn't exist
 db.bind(provider="sqlite", filename="database.sqlite", create_db=True)
 

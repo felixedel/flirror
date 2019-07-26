@@ -8,7 +8,7 @@ from pony.orm import db_session, desc, select
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-from flirror.database import Oauth2Credentials, Weather, WeatherForecast
+from flirror.database import CalendarEvent, Oauth2Credentials, Weather, WeatherForecast
 from flirror.exceptions import CrawlerDataError
 
 LOGGER = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class CalendarCrawler:
         self.flirror_host = "localhost:5000"
 
     def crawl(self):
-        cred = self.get_credentials
+        cred = self.get_credentials()
         # TODO Retrieve a new token, if none could be found or the one found is
         # expired (got 403 from the google API)
         #   if "oauth2_credentials" not in flask.session:
@@ -133,7 +133,6 @@ class CalendarCrawler:
                 "Could not find calendar with names {}".format(self.calendars)
             )
 
-        all_events = []
         for cal_item in cals_filtered:
             # Call the calendar API
             now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
@@ -150,13 +149,16 @@ class CalendarCrawler:
                 .execute()
             )
             events = events_result.get("items", [])
-            all_events.extend(self._parse_event_data(event) for event in events)
+            for event in events:
+                self._parse_event_data(event)
 
         # Sort the events from multiple calendars, but ignore the timezone
-        all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
-        return all_events[:self.max_items], events
+        # TODO Is that still needed when we have a database?
+        #all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
+        #return all_events[: self.max_items]
 
     @staticmethod
+    @db_session
     def _parse_event_data(event):
         start = event["start"].get("dateTime")
         type = "time"
@@ -166,16 +168,17 @@ class CalendarCrawler:
         end = event["end"].get("dateTime")
         if end is None:
             end = event["end"].get("date")
-        return {
-            "summary": event["summary"],
+
+        CalendarEvent(
+            summary=event["summary"],
             # start.date -> whole day
             # start.dateTime -> specific time
-            "start": dtparse(start),
-            "end": dtparse(end),
+            start=dtparse(start),
+            end=dtparse(end),
             # The type reflects either whole day events or a specific time span
-            "type": type,
-            "location": event.get("location"),
-        }
+            type=type,
+            location=event.get("location"),
+        )
 
     @staticmethod
     @db_session
