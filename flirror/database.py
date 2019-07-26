@@ -41,7 +41,7 @@ class CalendarEvent(db.Entity):
     start = Required(ormtypes.datetime)
     end = Required(ormtypes.datetime)
     type = Required(str)
-    location = Optional(str)
+    location = Optional(str, nullable=True)
 
 
 # Connect to the database and create it if it doesn't exist

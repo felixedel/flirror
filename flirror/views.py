@@ -1,11 +1,10 @@
 import abc
-from datetime import datetime
 
 from flask import current_app, render_template
 from flask.views import MethodView
 from pony.orm import db_session, desc, select
 
-from flirror.database import Weather
+from flirror.database import CalendarEvent, Weather
 
 
 class FlirrorMethodView(MethodView):
@@ -55,23 +54,27 @@ class WeatherView(FlirrorMethodView):
     rule = "/weather"
     template_name = "weather.html"
 
-    # TODO Change to template filter registered by the weather module
     def get(self):
         # Get view-specific settings from config
         settings = current_app.config["MODULES"].get(self.endpoint)
-        weather, forecasts = self.get_weather(settings)
+        city = settings.get("city")
+
+        # Get weather data from database
+        weather, forecasts = self.get_weather(city)
+
+        # Provide weather data in template context
         context = self.get_context(weather=weather, forecasts=forecasts)
         return render_template(self.template_name, **context)
 
     @db_session
-    def get_weather(self, settings):
-        # TODO Use the city as where clause in the SQL statement
-        city = settings.get("city")
-
+    def get_weather(self, city):
+        # TODO Get the latest weather entry based on what?
+        # TODO Do we need to check the city at all? There should be only one
+        #  data-crawler per mirror ensuring that the correct data is crawled and
+        #  stored in the database.
         for weather in select(w for w in Weather if w.city == city).order_by(
             desc(Weather.date)
         ):
-            print(weather.city)
             # TODO Simply return the first weather we found
             # NOTE Directly return the full list of forecasts, because it needs
             # and active db_session to get it.
@@ -84,54 +87,28 @@ class CalendarView(FlirrorMethodView):
     rule = "/calendar"
     template_name = "calendar.html"
 
-    api_scopes = ["https://www.googleapis.com/auth/calendar.readonly"]
-    api_service_name = "calendar"
-    api_version = "v3"
-
-    default_max_items = 5
-
     def get(self):
         # Get view-specific settings from config
-        settings = current_app.config["MODULES"].get(self.endpoint)
-        calendars = settings["calendars"]
-        max_items = settings.get("max_items", self.default_max_items)
+        # TODO Do we need to filter for these calendars?
+        #  settings = current_app.config["MODULES"].get(self.endpoint)
+        #  calendars = settings["calendars"]
 
-        cred = self.get_credentials()
-
-
-        events, events_json = self.get_events(service, calendars, max_items)
-        context = self.get_context(events=events, events_json=events_json)
+        events = self.get_events()
+        # Provide events in template context
+        context = self.get_context(events=events)
         return render_template(self.template_name, **context)
 
-    def get_events(self, api_service, calendars, max_items):
-        all_events = []
-        # Use the value from config
-        calendar_list = api_service.calendarList().list().execute()
-        calendar_items = calendar_list.get("items")
-        current_app.logger.info("%s", cals_filtered)
-
-        for cal_item in cals_filtered:
-            # Call the calendar API
-            now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
-            current_app.logger.info("Getting the upcoming 10 events")
-            events_result = (
-                api_service.events()
-                .list(
-                    calendarId=cal_item["id"],
-                    timeMin=now,
-                    maxResults=max_items,
-                    singleEvents=True,
-                    orderBy="startTime",
-                )
-                .execute()
-            )
-            events = events_result.get("items", [])
-            all_events.extend(self._parse_event_data(event) for event in events)
-
-        # Sort the events from multiple calendars, but ignore the timezone
-        all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
-        return all_events[:max_items], events
-
+    @db_session
+    def get_events(self):
+        # Get events from database
+        events = []
+        # TODO How to limit the amount of items to retrieve from the database?
+        #  Use the max_items setting here also?
+        for event in select(e for e in CalendarEvent).order_by(
+                CalendarEvent.start
+        ):
+            events.append(event)
+        return events
 
 
 class MapView(FlirrorMethodView):

@@ -154,8 +154,8 @@ class CalendarCrawler:
 
         # Sort the events from multiple calendars, but ignore the timezone
         # TODO Is that still needed when we have a database?
-        #all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
-        #return all_events[: self.max_items]
+        # all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
+        # return all_events[: self.max_items]
 
     @staticmethod
     @db_session
@@ -169,12 +169,18 @@ class CalendarCrawler:
         if end is None:
             end = event["end"].get("date")
 
+        # Convert strings to dates and set timezone info to none,
+        # as not all entries have time zone infos
+        # TODO: How to fix this?
+        start = dtparse(start).replace(tzinfo=None)
+        end = dtparse(end).replace(tzinfo=None)
+
         CalendarEvent(
             summary=event["summary"],
             # start.date -> whole day
             # start.dateTime -> specific time
-            start=dtparse(start),
-            end=dtparse(end),
+            start=start,
+            end=end,
             # The type reflects either whole day events or a specific time span
             type=type,
             location=event.get("location"),
