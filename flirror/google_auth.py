@@ -1,11 +1,14 @@
 import os
+from datetime import datetime
 
 import flask
 import google.oauth2.credentials
 import requests
 from flask import current_app, jsonify
 from google_auth_oauthlib.flow import Flow
+from pony.orm import db_session
 
+from .database import Oauth2Credentials
 from .views import FlirrorMethodView
 
 
@@ -95,11 +98,21 @@ class OAuth2CallbackView(FlirrorMethodView):
         # Store credentials in the session
         # TODO (felix): Store that somewhere else (sqlite?), so we don't need
         #  to retrieve them again after every restart.
-        credentials = flow.credentials
-        flask.session["oauth2_credentials"] = self._credentials_to_dict(credentials)
+        self.store_credentials(flow.credentials)
 
         # TODO (felix): Provide the target endpoint in the original request
         return flask.redirect(flask.url_for("calendar"))
+
+    @staticmethod
+    @db_session
+    def store_credentials(credentials):
+        Oauth2Credentials(
+            date=datetime.utcnow(),
+            client_id=credentials.client_id,
+            client_secret=credentials.client_secret,
+            token=credentials.token,
+            token_uri=credentials.token_uri,
+        )
 
     @staticmethod
     def _credentials_to_dict(creds):

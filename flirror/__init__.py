@@ -7,6 +7,7 @@ from .google_auth import (
     OAuth2View,
 )
 from .helpers import make_error_handler
+from .utils import weather_icon
 from .views import CalendarView, IndexView, MapView, WeatherView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -37,6 +38,9 @@ def create_app():
     app.register_error_handler(400, error_handler)
     app.register_error_handler(403, error_handler)
     app.register_error_handler(404, error_handler)
+
+    # Add custom Jinja2 template filters
+    app.add_template_filter(weather_icon)
 
     return app
 
