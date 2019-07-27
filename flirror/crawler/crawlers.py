@@ -106,37 +106,29 @@ class CalendarCrawler:
 
     SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
     GOOGLE_OAUTH_ACCESS_URL = "https://accounts.google.com/o/oauth2/device/code"
-    GOOGLE_OAUTH_REFRESH_URL = "https://www.googleapis.com/oauth2/v4/token"
+    GOOGLE_OAUTH_POLL_URL = "https://www.googleapis.com/oauth2/v4/token"
 
     def __init__(self, calendars, max_items=DEFAULT_MAX_ITEMS):
         self.calendars = calendars
         self.max_items = max_items
 
     def crawl(self):
-        self.ask_for_access()
-        return
-        cred = self.authenticate()
-        if cred is None:
+        token = self.authenticate()
+        print(token)
+        if token is None:
             LOGGER.warning("Authentication failed. Cannot retrieve calendar data")
             return
             raise CrawlerDataError(
                 "Authentication failed. Cannot retrieve calendar data"
             )
+        return
 
-        # TODO Could we get rid of flask in here somehow?
-        res = requests.get(self.flirror_oauth_url)
-        # TODO Check if the response was successfull, apart from that the token
-        #  should then be stored in the sqlite database
-
-        cred = self.get_credentials()
-        if cred is None:
-            raise CrawlerDataError("Unable to refresh Google OAuth token")
-
+        # TODO Get client_id and secret from flow
         credentials = google.oauth2.credentials.Credentials(
             client_id=cred.client_id,
             client_secret=cred.client_secret,
-            token=cred.token,
-            token_uri=cred.token_uri,
+            token=token,
+            #token_uri=cred.token_uri,
         )
 
         service = googleapiclient.discovery.build(
@@ -209,43 +201,80 @@ class CalendarCrawler:
             location=event.get("location"),
         )
 
-    @staticmethod
-    @db_session
-    def get_credentials():
-        # TODO There should only be one valid credentials entry in the database.
-        #   How can we achieve this in a straight-forward way?
-        for credentials in select(c for c in Oauth2Credentials).order_by(
-            desc(Oauth2Credentials.date)
-        ):
-            return credentials
-
     @db_session
     def authenticate(self):
-        cred = self.get_credentials()
-        if cred is None:
-            LOGGER.warning("No credentials found, refreshing tokens")
+        # Check if we already have a valid token
+        query = Misc.select(lambda m: m.key == "google_oauth_token")
+        token_obj = query.first()
+        # TODO If token_obj is None or token_obj.expired_in <= now
+        if token_obj is None:
+            LOGGER.debug("Could not find any token. Requesting a new one.")
+            # TODO Initial request with device_code necessary
+            token = self.initial_access_token()
+        else:
+            now = time()
+            if token_obj.value["expires_in"] <= now:
+                LOGGER.debug("Found a token, but expired. Requesting a new one.")
+                # TODO Use the refresh_token to get a new one
+                token = self.refresh_access_token(token_obj.value["refresh_token"])
+            else:
+                token = token_obj.value["access_token"]
+
+        # Hopefully, we got a token in any case now
+        return token
+
+    @db_session
+    def refresh_access_token(self, refresh_token):
+        # Use the refresh token to request a new access token
         flow = self._get_oauth_flow()
-
-        # Get device code from database
-        query = Misc.select(lambda m: m.key == "goauth_device_code")
-        # TODO If nothing could be found -> ask_for_access()
-        device_code = query.first().value
-
         data = {
             "client_id": flow.client_config["client_id"],
             "client_secret": flow.client_config["client_secret"],
-            "code": device_code,
+            "grant_type": refresh_token,
+        }
+
+        now = time()
+        res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
+        LOGGER.info(res.status_code)
+        LOGGER.info(res.content)
+
+        # TODO Error handling (e.g. offline)?
+        value = res.json()
+        # Calculate an absolute expiry timestamp for simpler evaluation
+        value["expires_in"] += now
+        # Store the device in the database for later usage
+        Misc(key="google_oauth_token", value=value)
+        return value
+
+    @db_session
+    def initial_access_token(self):
+        # We need at least a (valid) device code for the initial token request
+        device = self.ask_for_access()
+        if device is None:
+            LOGGER.error("Unable to retrieve data. You have to provide access first")
+            return
+
+        # If we have a valid (not expired) device code, we can use this for an initial request
+        flow = self._get_oauth_flow()
+        data = {
+            "client_id": flow.client_config["client_id"],
+            "client_secret": flow.client_config["client_secret"],
+            "code": device["device_code"],
             "grant_type": "http://oauth.net/grant_type/device/1.0",
         }
 
-        res = requests.post(self.GOOGLE_OAUTH_REFRESH_URL, data=data)
-        # TODO Catch error if user did not grant access yet
-        #  428
-        #  b'{\n  "error": "authorization_pending",\n
-        #  "error_description": "Precondition Failed"\n}'
+        now = time()
+        res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
         LOGGER.info(res.status_code)
         LOGGER.info(res.content)
-        res_json = res.json()
+
+        # TODO Error handling (e.g. offline)?
+        value = res.json()
+        # Calculate an absolute expiry timestamp for simpler evaluation
+        value["expires_in"] += now
+        # Store the device in the database for later usage
+        Misc(key="google_oauth_token", value=value)
+        return value
 
     @db_session
     def ask_for_access(self):
@@ -260,7 +289,9 @@ class CalendarCrawler:
         else:
             # Check if device code is still valid
             now = time()
-            if device_obj.value["expires_in"] >= now:
+            print(now)
+            print(device_obj.value["expires_in"])
+            if device_obj.value["expires_in"] <= now:
                 LOGGER.debug("Device code found, but expired. Requesting a new one")
             else:
                 device = device_obj.value
@@ -269,12 +300,14 @@ class CalendarCrawler:
         if device is None:
             device = self._ask_for_access()
 
+        # TODO That's only needed the first time
         LOGGER.info(
             "Please visit '%s' and enter '%s'",
             device["verification_url"],
             device["user_code"],
         )
         # TODO Show a QR code pointing to the URL + entering the code
+        return device
 
     def _ask_for_access(self):
         # Store current timestamp to calculate an absolute expiry date
