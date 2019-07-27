@@ -114,19 +114,18 @@ class CalendarCrawler:
 
     def crawl(self):
         token = self.authenticate()
-        print(token)
         if token is None:
             LOGGER.warning("Authentication failed. Cannot retrieve calendar data")
-            return
             raise CrawlerDataError(
                 "Authentication failed. Cannot retrieve calendar data"
             )
-        return
+
+        flow = self._get_oauth_flow()
 
         # TODO Get client_id and secret from flow
         credentials = google.oauth2.credentials.Credentials(
-            client_id=cred.client_id,
-            client_secret=cred.client_secret,
+            client_id=flow.client_config["client_id"],
+            client_secret=flow.client_config["client_secret"],
             token=token,
             #token_uri=cred.token_uri,
         )
@@ -265,8 +264,6 @@ class CalendarCrawler:
 
         now = time()
         res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
-        LOGGER.info(res.status_code)
-        LOGGER.info(res.content)
 
         # TODO Error handling (e.g. offline)?
         value = res.json()
@@ -289,25 +286,19 @@ class CalendarCrawler:
         else:
             # Check if device code is still valid
             now = time()
-            print(now)
-            print(device_obj.value["expires_in"])
             if device_obj.value["expires_in"] <= now:
                 LOGGER.debug("Device code found, but expired. Requesting a new one")
             else:
                 device = device_obj.value
 
-        # We use None as indicator for a missing or expired device
-        if device is None:
-            device = self._ask_for_access()
+        if device is not None:
+            return device
 
-        # TODO That's only needed the first time
-        LOGGER.info(
-            "Please visit '%s' and enter '%s'",
-            device["verification_url"],
-            device["user_code"],
-        )
-        # TODO Show a QR code pointing to the URL + entering the code
-        return device
+        # If we got no device so far, we need the user to grant us permission first
+        self._ask_for_access()
+        # Use this as indicator to stop the authentication flow as it doesn't
+        # make sense to continue until the access is granted by the user.
+        return None
 
     def _ask_for_access(self):
         # Store current timestamp to calculate an absolute expiry date
@@ -324,12 +315,20 @@ class CalendarCrawler:
         LOGGER.info(res.content)
 
         # TODO Error handling (e.g. offline)?
-        value = res.json()
+        device = res.json()
         # Calculate an absolute expiry timestamp for simpler evaluation
-        value["expires_in"] += now
+        device["expires_in"] += now
         # Store the device in the database for later usage
-        Misc(key="google_oauth_device", value=value)
-        return value
+        Misc(key="google_oauth_device", value=device)
+
+        LOGGER.info(
+            "Please visit '%s' and enter '%s'",
+            device["verification_url"],
+            device["user_code"],
+        )
+        # TODO Show a QR code pointing to the URL + entering the code
+
+        return device
 
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
@@ -342,6 +341,4 @@ class CalendarCrawler:
 
         # Let the flow creation parse the client_secret file
         flow = Flow.from_client_secrets_file(client_secret_file, scopes=self.SCOPES)
-        LOGGER.info(flow.client_config["client_id"])
-        LOGGER.info(flow)
         return flow

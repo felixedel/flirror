@@ -1,4 +1,13 @@
-from pony.orm import Database, Json, Optional, ormtypes, Required, set_sql_debug, Set
+from pony.orm import (
+    Database,
+    Json,
+    Optional,
+    ormtypes,
+    PrimaryKey,
+    Required,
+    set_sql_debug,
+    Set,
+)
 
 db = Database()
 
@@ -45,7 +54,7 @@ class CalendarEvent(db.Entity):
 
 
 class Misc(db.Entity):
-    key = Required(str)
+    key = PrimaryKey(str)
     value = Required(Json)
 
 
