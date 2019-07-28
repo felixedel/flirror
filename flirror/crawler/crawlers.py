@@ -1,15 +1,17 @@
 import logging
 from datetime import datetime
 
-import google.oauth2.credentials
 import googleapiclient.discovery
 from dateutil.parser import parse as dtparse
-from pony.orm import db_session, desc, select
+from google.auth.exceptions import RefreshError
+from pony.orm import db_session
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-from flirror.database import CalendarEvent, Oauth2Credentials, Weather, WeatherForecast
+
+from flirror.database import CalendarEvent, Weather, WeatherForecast
 from flirror.exceptions import CrawlerDataError
+from flirror.crawler.google_auth import GoogleOAuth
 
 LOGGER = logging.getLogger(__name__)
 
@@ -94,33 +96,36 @@ class CalendarCrawler:
     API_SERVICE_NAME = "calendar"
     API_VERSION = "v3"
 
+    SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+
     def __init__(self, calendars, max_items=DEFAULT_MAX_ITEMS):
         self.calendars = calendars
         self.max_items = max_items
-        # TODO Make the smarmirror host and port configurable and get it from the config
-        #   We need it to refresh the google oauth token if expired
-        self.flirror_host = "localhost:5000"
 
     def crawl(self):
-        cred = self.get_credentials()
-        # TODO Retrieve a new token, if none could be found or the one found is
-        # expired (got 403 from the google API)
-        #   if "oauth2_credentials" not in flask.session:
-        #     return flask.redirect(flask.url_for("oauth2"))
-        # NOTE: Call the {flirror_host}/oauth2 endpoint with requests
-
-        credentials = google.oauth2.credentials.Credentials(
-            client_id=cred.client_id,
-            client_secret=cred.client_secret,
-            token=cred.token,
-            token_uri=cred.token_uri,
-        )
+        credentials = GoogleOAuth(self.SCOPES).get_credentials()
 
         service = googleapiclient.discovery.build(
             self.API_SERVICE_NAME, self.API_VERSION, credentials=credentials
         )
 
-        calendar_list = service.calendarList().list().execute()
+        try:
+            # TODO Error on initial request (with initial access token):
+            #  ValueError: {'access_token': 'ya29.GltTB4hSMZCww2snLPzpma0Fkq9vriYAjdySDTiSfYdiCKupTczbbv5hwevK4DAV2r7mfXi4wMiV2cmYFSpWyaP3ukHGTUkWPLI3Z2B0YrwxqO4f9ycbS39yj3SS',
+            #  'expires_in': 1564303934.249835, 'refresh_token': '1/OrhaTqqkK349FgaGOwzjSN-j0JxsZfKbNRKyDPS3kzI',
+            #  'scope': 'https://www.googleapis.com/auth/calendar.readonly', 'token_type': 'Bearer'}
+            #  could not be converted to unicode
+            calendar_list = service.calendarList().list().execute()
+        except RefreshError:
+            # Google responds with a RefreshError when the token is invalid as it
+            # would try to refresh the token if the necessary fields are set
+            # which we haven't)
+            LOGGER.error(
+                "Look's like flirror doesn't have the permission to access "
+                "your calendar."
+            )
+            return
+
         calendar_items = calendar_list.get("items")
 
         [LOGGER.info("%s: %s", i["id"], i["summary"]) for i in calendar_items]
@@ -185,13 +190,3 @@ class CalendarCrawler:
             type=type,
             location=event.get("location"),
         )
-
-    @staticmethod
-    @db_session
-    def get_credentials():
-        # TODO There should only be one valid credentials entry in the database.
-        #   How can we achieve this in a straight-forward way?
-        for credentials in select(c for c in Oauth2Credentials).order_by(
-            desc(Oauth2Credentials.date)
-        ):
-            return credentials

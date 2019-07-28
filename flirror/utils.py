@@ -1,4 +1,3 @@
-
 weather_icons = {
     "01d": "wi wi-day-sunny",
     "02d": "wi wi-day-cloudy",

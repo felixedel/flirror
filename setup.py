@@ -32,8 +32,6 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
-    entry_points={
-        "console_scripts": ["flirror-crawler = flirror.crawler.main:main"],
-    },
+    entry_points={"console_scripts": ["flirror-crawler = flirror.crawler.main:main"]},
     # TODO classifiers for PyPI
 )

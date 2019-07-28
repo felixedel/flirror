@@ -1,4 +1,13 @@
-from pony.orm import Database, Optional, ormtypes, Required, set_sql_debug, Set
+from pony.orm import (
+    Database,
+    Json,
+    Optional,
+    ormtypes,
+    PrimaryKey,
+    Required,
+    # set_sql_debug,
+    Set,
+)
 
 db = Database()
 
@@ -28,20 +37,17 @@ class WeatherForecast(WeatherBasic):
     weather = Required(Weather)
 
 
-class Oauth2Credentials(db.Entity):
-    date = Required(ormtypes.datetime)
-    client_id = Required(str)
-    client_secret = Required(str)
-    token = Required(str)
-    token_uri = Required(str)
-
-
 class CalendarEvent(db.Entity):
     summary = Required(str)
     start = Required(ormtypes.datetime)
     end = Required(ormtypes.datetime)
     type = Required(str)
     location = Optional(str, nullable=True)
+
+
+class Misc(db.Entity):
+    key = PrimaryKey(str)
+    value = Required(Json)
 
 
 # Connect to the database and create it if it doesn't exist
@@ -51,4 +57,4 @@ db.bind(provider="sqlite", filename="database.sqlite", create_db=True)
 db.generate_mapping(create_tables=True)
 
 # Activate pony's debug mode
-set_sql_debug(True)
+# set_sql_debug(True)

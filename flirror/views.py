@@ -104,9 +104,7 @@ class CalendarView(FlirrorMethodView):
         events = []
         # TODO How to limit the amount of items to retrieve from the database?
         #  Use the max_items setting here also?
-        for event in select(e for e in CalendarEvent).order_by(
-                CalendarEvent.start
-        ):
+        for event in select(e for e in CalendarEvent).order_by(CalendarEvent.start):
             events.append(event)
         return events
 
