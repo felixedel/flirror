@@ -45,7 +45,7 @@ class CalendarEvent(db.Entity):
     location = Optional(str, nullable=True)
 
 
-class Misc(db.Entity):
+class FlirrorObject(db.Entity):
     key = PrimaryKey(str)
     value = Required(Json)
 

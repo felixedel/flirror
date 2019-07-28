@@ -7,7 +7,7 @@ import requests
 from google_auth_oauthlib.flow import Flow
 from pony.orm import db_session, ObjectNotFound
 
-from flirror.database import Misc
+from flirror.database import FlirrorObject
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,13 +44,11 @@ class GoogleOAuth:
     def authenticate(self):
         # Check if we already have a valid token
         LOGGER.debug("Check if we already have an access token")
-        query = Misc.select(lambda m: m.key == "google_oauth_token")
-        token_obj = query.first()
-        # TODO If token_obj is None or token_obj.expired_in <= now
-        if token_obj is None:
-            LOGGER.debug("Could not find any access token. Requesting an initial one.")
-            token = self.ask_for_access()
-        else:
+        try:
+            # The most common case is to refresh an existing token, so there should
+            # already be an existing database entry that we can update
+            token_obj = FlirrorObject["google_oauth_token"]
+
             now = time.time()
             if token_obj.value["expires_in"] <= now:
                 LOGGER.debug(
@@ -60,6 +58,9 @@ class GoogleOAuth:
                 token = self.refresh_access_token(token_obj.value["refresh_token"])
             else:
                 token = token_obj.value["access_token"]
+        except ObjectNotFound:
+            LOGGER.debug("Could not find any access token. Requesting an initial one.")
+            token = self.ask_for_access()
 
         # Hopefully, we got a token in any case now
         return token
@@ -168,11 +169,11 @@ class GoogleOAuth:
         try:
             # The most common case is to refresh an existing token, so there should
             # already be an existing database entry that we can update
-            Misc["google_oauth_token"].value = token_data
+            FlirrorObject["google_oauth_token"].value = token_data
         except ObjectNotFound:
             # If we request a token for the first time, we don't have an entry in
             # the database yet and thus have to create one
-            Misc(key="google_oauth_token", value=token_data)
+            FlirrorObject(key="google_oauth_token", value=token_data)
 
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
