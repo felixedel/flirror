@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime
-from time import time
+import time
 
 import google.oauth2.credentials
 import googleapiclient.discovery
@@ -9,17 +9,12 @@ import requests
 from dateutil.parser import parse as dtparse
 from google.auth.exceptions import RefreshError
 from google_auth_oauthlib.flow import Flow
-from pony.orm import db_session, desc, ObjectNotFound, select
+from pony.orm import db_session, CacheIndexError
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-from flirror.database import (
-    CalendarEvent,
-    Misc,
-    Oauth2Credentials,
-    Weather,
-    WeatherForecast,
-)
+
+from flirror.database import CalendarEvent, Misc, Weather, WeatherForecast
 from flirror.exceptions import CrawlerDataError
 
 LOGGER = logging.getLogger(__name__)
@@ -143,11 +138,10 @@ class CalendarCrawler:
             # Google responds with a RefreshError when the token is invalid as it
             # would try to refresh the token if the necessary fields are set
             # which we haven't)
-            LOGGER.error("Look's like flirror doesn't have the permission to access "
-                         "your calendar.")
-            # Delete the token in the database to prompt for another initial
-            # access granted
-            self.delete_token()
+            LOGGER.error(
+                "Look's like flirror doesn't have the permission to access "
+                "your calendar."
+            )
             return
 
         calendar_items = calendar_list.get("items")
@@ -223,13 +217,14 @@ class CalendarCrawler:
         token_obj = query.first()
         # TODO If token_obj is None or token_obj.expired_in <= now
         if token_obj is None:
-            LOGGER.debug("Could not find any access token. Requesting a new one.")
-            # TODO Initial request with device_code necessary
-            token = self.initial_access_token()
+            LOGGER.debug("Could not find any access token. Requesting an initial one.")
+            token = self.ask_for_access()
         else:
-            now = time()
+            now = time.time()
             if token_obj.value["expires_in"] <= now:
-                LOGGER.debug("Found an access token, but expired. Requesting a new one.")
+                LOGGER.debug(
+                    "Found an access token, but expired. Requesting a new one."
+                )
                 # We use the refresh_token to get a new access token
                 token = self.refresh_access_token(token_obj.value["refresh_token"])
             else:
@@ -246,85 +241,31 @@ class CalendarCrawler:
         data = {
             "client_id": flow.client_config["client_id"],
             "client_secret": flow.client_config["client_secret"],
-            "grant_type": refresh_token,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token",
         }
 
-        now = time()
+        now = time.time()
         res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
         LOGGER.info(res.status_code)
         LOGGER.info(res.content)
 
         # TODO Error handling (e.g. offline)?
-        value = res.json()
+        token_data = res.json()
         # Calculate an absolute expiry timestamp for simpler evaluation
-        value["expires_in"] += now
-        # Store the device in the database for later usage
-        Misc(key="google_oauth_token", value=value)
-        return value
+        token_data["expires_in"] += now
+        self._store_access_token(token_data)
+        return token_data
 
-    @db_session
-    def initial_access_token(self):
-        LOGGER.debug("Requesting initial access token")
-        # We need at least a (valid) device code for the initial token request
-        device = self.ask_for_access()
-        if device is None:
-            LOGGER.error("Unable to retrieve data. You have to provide access first")
-            return
-
-        # If we have a valid (not expired) device code, we can use this for an initial request
-        flow = self._get_oauth_flow()
-        data = {
-            "client_id": flow.client_config["client_id"],
-            "client_secret": flow.client_config["client_secret"],
-            "code": device["device_code"],
-            "grant_type": "http://oauth.net/grant_type/device/1.0",
-        }
-
-        now = time()
-        res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
-        try:
-            res.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            LOGGER.error(e)
-            LOGGER.error(res.json())
-            # TODO Our access might have been revoken, so we should to show the
-            #  initial "grant access" message and exit.
-            return
-        value = res.json()
-        print(value)
-        # Calculate an absolute expiry timestamp for simpler evaluation
-        value["expires_in"] += now
-        # Store the device in the database for later usage
-        Misc(key="google_oauth_token", value=value)
-        return value
-
-    @db_session
     def ask_for_access(self):
-        LOGGER.debug("Checking if device code is already available")
-        try:
-            # TODO If we want to implement profiles, we could prefix all
-            #  necessary keys with the profile name that comes from the settings
-            #  file.
-            device_obj = Misc["google_oauth_device"]
-            now = time()
-            if device_obj.value["expires_in"] > now:
-                return device_obj.value
-            else:
-                LOGGER.debug("Device code found, but expired. Requesting a new one")
-                # We "update" the existing database entry with a new value (device)
-                self._ask_for_access(device_obj)
-        except ObjectNotFound:
-            LOGGER.debug("No device code found, requesting a new one")
-            # If we got no device so far, we need the user to grant us permission first
-            self._ask_for_access()
+        # As the device code is only necessary for the initial token request,
+        # we should do both in one go. Otherwise, there are too many edge cases
+        # to cover and if something goes wrong or the user does not grant us
+        # permission before the device code is expired, we have to start from
+        # the beginning.
 
-        # Use this as indicator to stop the authentication flow as it doesn't
-        # make sense to continue until the access is granted by the user.
-        return None
-
-    def _ask_for_access(self, device_obj=None):
         # Store current timestamp to calculate an absolute expiry date
-        now = time()
+        now = time.time()
 
         flow = self._get_oauth_flow()
         data = {
@@ -340,13 +281,6 @@ class CalendarCrawler:
         device = res.json()
         # Calculate an absolute expiry timestamp for simpler evaluation
         device["expires_in"] += now
-        # Store the device in the database for later usage
-        if device_obj is not None:
-            # Update the existing database entry
-            device_obj.value = device
-        else:
-            # Create a new database entry
-            Misc(key="google_oauth_device", value=device)
 
         LOGGER.info(
             "Please visit '%s' and enter '%s'",
@@ -355,15 +289,80 @@ class CalendarCrawler:
         )
         # TODO Show a QR code pointing to the URL + entering the code
 
-        return device
+        # TODO Poll google's auth server in the specified interval until
+        #  a) the user has granted us permission and we get a valid access token
+        #  b) The device code got expired (or another time out from our side)
 
-    @staticmethod
+        token_data = self.poll_for_initial_access_token(device)
+        return token_data["access_token"]
+
+    def poll_for_initial_access_token(self, device):
+        # TODO Timeout, max_retries?
+        # Theoretically, we can poll until the device code is expired (which is
+        # 30 minutes)
+        while time.time() < device["expires_in"]:
+            try:
+                now = time.time()
+                token_data = self._initial_access_token(device)
+                # Calculate an absolute expiry timestamp for simpler evaluation
+                token_data["expires_in"] += now
+                self._store_access_token(token_data)
+                return token_data
+            except requests.exceptions.HTTPError as e:
+                LOGGER.error(
+                    "Could not get initial access token. You might want "
+                    "to grant us permission first: %s",
+                    e,
+                )
+                # Should be around 5 secs
+                time.sleep(device["interval"])
+
+        """
+        # Use requests's session adapter to deal with retries and timeout
+        session = requests.Session()
+        retry = Retry(
+            total=10,
+            read=10,
+            connect=10,
+            backoff_factor=1,
+            status_forcelist=[428],
+            method_whitelist={"GET", "POST"},
+        )
+
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        res = session.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
+        """
+
+    def _initial_access_token(self, device):
+        # Use the device code for an initial token request
+        flow = self._get_oauth_flow()
+        data = {
+            "client_id": flow.client_config["client_id"],
+            "client_secret": flow.client_config["client_secret"],
+            "code": device["device_code"],
+            "grant_type": "http://oauth.net/grant_type/device/1.0",
+        }
+        res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
+        # We catch this in the caller method
+        res.raise_for_status()
+
+        return res.json()
+
     @db_session
-    def delete_token():
-        LOGGER.info("Deleting current (invalid) access token to allow for a "
-                    "new initial access request.")
-        Misc["google_oauth_token"].delete()
-        Misc["google_oauth_device"].delete()
+    def _store_access_token(self, token_data):
+        try:
+            # The most common case is to refresh an existing token, so there should
+            # already be an existing database entry that we can update
+            Misc["google_oauth_token"].value = token_data
+        except CacheIndexError as e:
+            if "instance with primary key google_oauth_token already exists" in str(e):
+                # If we request a token for the first time, we don't have an entry in
+                # the database yet and thus have to create one
+                Misc(key="google_oauth_token", value=token_data)
+            else:
+                raise e
 
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")

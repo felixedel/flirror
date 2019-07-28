@@ -64,7 +64,7 @@ def crawl(ctx):
 
     # TODO Look up crawlers from config file
     for name, crawler_cls in [
-        # ("weather", WeatherCrawler),
+        ("weather", WeatherCrawler),
         ("calendar", CalendarCrawler),
     ]:
         settings = config["MODULES"].get(name)

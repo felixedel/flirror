@@ -5,7 +5,7 @@ from pony.orm import (
     ormtypes,
     PrimaryKey,
     Required,
-    set_sql_debug,
+    # set_sql_debug,
     Set,
 )
 
@@ -35,14 +35,6 @@ class WeatherForecast(WeatherBasic):
     temp_night = Required(float)
     # foreign-key relation to weather
     weather = Required(Weather)
-
-
-class Oauth2Credentials(db.Entity):
-    date = Required(ormtypes.datetime)
-    client_id = Required(str)
-    client_secret = Required(str)
-    token = Required(str)
-    token_uri = Required(str)
 
 
 class CalendarEvent(db.Entity):
