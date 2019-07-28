@@ -7,8 +7,9 @@ import google.oauth2.credentials
 import googleapiclient.discovery
 import requests
 from dateutil.parser import parse as dtparse
+from google.auth.exceptions import RefreshError
 from google_auth_oauthlib.flow import Flow
-from pony.orm import db_session, desc, select
+from pony.orm import db_session, desc, ObjectNotFound, select
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
@@ -116,25 +117,39 @@ class CalendarCrawler:
         token = self.authenticate()
         if token is None:
             LOGGER.warning("Authentication failed. Cannot retrieve calendar data")
-            raise CrawlerDataError(
-                "Authentication failed. Cannot retrieve calendar data"
-            )
+            return
 
         flow = self._get_oauth_flow()
-
-        # TODO Get client_id and secret from flow
+        # TODO To let google refresh the token, we must specify the
+        #  refresh_token and the token_uri (which we don't have in this OAuth flow).
         credentials = google.oauth2.credentials.Credentials(
             client_id=flow.client_config["client_id"],
             client_secret=flow.client_config["client_secret"],
             token=token,
-            #token_uri=cred.token_uri,
         )
 
         service = googleapiclient.discovery.build(
             self.API_SERVICE_NAME, self.API_VERSION, credentials=credentials
         )
 
-        calendar_list = service.calendarList().list().execute()
+        try:
+            # TODO Error on initial request (with initial access token):
+            #  ValueError: {'access_token': 'ya29.GltTB4hSMZCww2snLPzpma0Fkq9vriYAjdySDTiSfYdiCKupTczbbv5hwevK4DAV2r7mfXi4wMiV2cmYFSpWyaP3ukHGTUkWPLI3Z2B0YrwxqO4f9ycbS39yj3SS',
+            #  'expires_in': 1564303934.249835, 'refresh_token': '1/OrhaTqqkK349FgaGOwzjSN-j0JxsZfKbNRKyDPS3kzI',
+            #  'scope': 'https://www.googleapis.com/auth/calendar.readonly', 'token_type': 'Bearer'}
+            #  could not be converted to unicode
+            calendar_list = service.calendarList().list().execute()
+        except RefreshError:
+            # Google responds with a RefreshError when the token is invalid as it
+            # would try to refresh the token if the necessary fields are set
+            # which we haven't)
+            LOGGER.error("Look's like flirror doesn't have the permission to access "
+                         "your calendar.")
+            # Delete the token in the database to prompt for another initial
+            # access granted
+            self.delete_token()
+            return
+
         calendar_items = calendar_list.get("items")
 
         [LOGGER.info("%s: %s", i["id"], i["summary"]) for i in calendar_items]
@@ -203,18 +218,19 @@ class CalendarCrawler:
     @db_session
     def authenticate(self):
         # Check if we already have a valid token
+        LOGGER.debug("Check if we already have an access token")
         query = Misc.select(lambda m: m.key == "google_oauth_token")
         token_obj = query.first()
         # TODO If token_obj is None or token_obj.expired_in <= now
         if token_obj is None:
-            LOGGER.debug("Could not find any token. Requesting a new one.")
+            LOGGER.debug("Could not find any access token. Requesting a new one.")
             # TODO Initial request with device_code necessary
             token = self.initial_access_token()
         else:
             now = time()
             if token_obj.value["expires_in"] <= now:
-                LOGGER.debug("Found a token, but expired. Requesting a new one.")
-                # TODO Use the refresh_token to get a new one
+                LOGGER.debug("Found an access token, but expired. Requesting a new one.")
+                # We use the refresh_token to get a new access token
                 token = self.refresh_access_token(token_obj.value["refresh_token"])
             else:
                 token = token_obj.value["access_token"]
@@ -224,6 +240,7 @@ class CalendarCrawler:
 
     @db_session
     def refresh_access_token(self, refresh_token):
+        LOGGER.debug("Requesting a new access token using the last refresh token")
         # Use the refresh token to request a new access token
         flow = self._get_oauth_flow()
         data = {
@@ -247,6 +264,7 @@ class CalendarCrawler:
 
     @db_session
     def initial_access_token(self):
+        LOGGER.debug("Requesting initial access token")
         # We need at least a (valid) device code for the initial token request
         device = self.ask_for_access()
         if device is None:
@@ -264,9 +282,16 @@ class CalendarCrawler:
 
         now = time()
         res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
-
-        # TODO Error handling (e.g. offline)?
+        try:
+            res.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            LOGGER.error(e)
+            LOGGER.error(res.json())
+            # TODO Our access might have been revoken, so we should to show the
+            #  initial "grant access" message and exit.
+            return
         value = res.json()
+        print(value)
         # Calculate an absolute expiry timestamp for simpler evaluation
         value["expires_in"] += now
         # Store the device in the database for later usage
@@ -276,31 +301,28 @@ class CalendarCrawler:
     @db_session
     def ask_for_access(self):
         LOGGER.debug("Checking if device code is already available")
-        device = None
-        query = Misc.select(lambda m: m.key == "google_oauth_device")
-        device_obj = query.first()
-
-        # If nothing could be found, we need to request a new one
-        if device_obj is None:
-            LOGGER.debug("No device code found, requesting a new one")
-        else:
-            # Check if device code is still valid
+        try:
+            # TODO If we want to implement profiles, we could prefix all
+            #  necessary keys with the profile name that comes from the settings
+            #  file.
+            device_obj = Misc["google_oauth_device"]
             now = time()
-            if device_obj.value["expires_in"] <= now:
-                LOGGER.debug("Device code found, but expired. Requesting a new one")
+            if device_obj.value["expires_in"] > now:
+                return device_obj.value
             else:
-                device = device_obj.value
+                LOGGER.debug("Device code found, but expired. Requesting a new one")
+                # We "update" the existing database entry with a new value (device)
+                self._ask_for_access(device_obj)
+        except ObjectNotFound:
+            LOGGER.debug("No device code found, requesting a new one")
+            # If we got no device so far, we need the user to grant us permission first
+            self._ask_for_access()
 
-        if device is not None:
-            return device
-
-        # If we got no device so far, we need the user to grant us permission first
-        self._ask_for_access()
         # Use this as indicator to stop the authentication flow as it doesn't
         # make sense to continue until the access is granted by the user.
         return None
 
-    def _ask_for_access(self):
+    def _ask_for_access(self, device_obj=None):
         # Store current timestamp to calculate an absolute expiry date
         now = time()
 
@@ -319,7 +341,12 @@ class CalendarCrawler:
         # Calculate an absolute expiry timestamp for simpler evaluation
         device["expires_in"] += now
         # Store the device in the database for later usage
-        Misc(key="google_oauth_device", value=device)
+        if device_obj is not None:
+            # Update the existing database entry
+            device_obj.value = device
+        else:
+            # Create a new database entry
+            Misc(key="google_oauth_device", value=device)
 
         LOGGER.info(
             "Please visit '%s' and enter '%s'",
@@ -329,6 +356,14 @@ class CalendarCrawler:
         # TODO Show a QR code pointing to the URL + entering the code
 
         return device
+
+    @staticmethod
+    @db_session
+    def delete_token():
+        LOGGER.info("Deleting current (invalid) access token to allow for a "
+                    "new initial access request.")
+        Misc["google_oauth_token"].delete()
+        Misc["google_oauth_device"].delete()
 
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
