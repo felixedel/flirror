@@ -7,7 +7,7 @@ import requests
 from google_auth_oauthlib.flow import Flow
 from pony.orm import db_session, ObjectNotFound
 
-from flirror.database import FlirrorObject
+from flirror.database import FlirrorObject, store_object_by_key
 
 LOGGER = logging.getLogger(__name__)
 
@@ -164,16 +164,9 @@ class GoogleOAuth:
 
         return res.json()
 
-    @db_session
-    def _store_access_token(self, token_data):
-        try:
-            # The most common case is to refresh an existing token, so there should
-            # already be an existing database entry that we can update
-            FlirrorObject["google_oauth_token"].value = token_data
-        except ObjectNotFound:
-            # If we request a token for the first time, we don't have an entry in
-            # the database yet and thus have to create one
-            FlirrorObject(key="google_oauth_token", value=token_data)
+    @staticmethod
+    def _store_access_token(token_data):
+        store_object_by_key(key="google_oauth_token", value=token_data)
 
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
