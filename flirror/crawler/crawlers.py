@@ -9,7 +9,7 @@ from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
 
-from flirror.database import CalendarEvent, Weather, WeatherForecast
+from flirror.database import CalendarEvent, store_object_by_key
 from flirror.exceptions import CrawlerDataError
 from flirror.crawler.google_auth import GoogleOAuth
 
@@ -17,6 +17,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class WeatherCrawler:
+
+    FLIRROR_OBJECT_KEY = "module_weather"
+
     def __init__(self, api_key, language, city, temp_unit):
         self.api_key = api_key
         self.language = language
@@ -35,8 +38,6 @@ class WeatherCrawler:
         weather = obs.get_weather()
 
         weather_data = self._parse_weather_data(weather, self.temp_unit, self.city)
-        # Store the weather information in sqlite
-        weather_obj = Weather(**weather_data)
 
         # Get the forecast for the next days
         fc = self.owm.daily_forecast(self.city, limit=7)
@@ -44,9 +45,9 @@ class WeatherCrawler:
         # Skip the first element as we already have the weather for today
         for fc_weather in list(fc.get_forecast())[1:]:
             fc_data = self._parse_forecast_data(fc_weather, self.temp_unit)
-            print(fc_data)
-            # Store the forecast information in sqlite
-            WeatherForecast(weather=weather_obj, **fc_data)
+            weather_data["forecasts"].append(fc_data)
+
+        store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=weather_data)
 
     @property
     def owm(self):
@@ -59,24 +60,25 @@ class WeatherCrawler:
         temp_dict = weather.get_temperature(unit=temp_unit)
         return {
             "city": city,
-            "date": datetime.utcfromtimestamp(weather.get_reference_time()),
+            "date": weather.get_reference_time(),
             "temp_cur": temp_dict["temp"],
             "temp_min": temp_dict["temp_min"],
             "temp_max": temp_dict["temp_max"],
             "status": weather.get_status(),
             "detailed_status": weather.get_detailed_status(),
-            "sunrise_time": datetime.utcfromtimestamp(weather.get_sunrise_time()),
-            "sunset_time": datetime.utcfromtimestamp(weather.get_sunset_time()),
+            "sunrise_time": weather.get_sunrise_time(),
+            "sunset_time": weather.get_sunset_time(),
             # TODO For the forecast we don't need the "detailed" icon
             #  (no need to differentiate between day/night)
             "icon": weather.get_weather_icon_name(),
+            "forecasts": [],
         }
 
     @staticmethod
     def _parse_forecast_data(forecast, temp_unit):
         temperature = forecast.get_temperature(unit=temp_unit)
         return {
-            "date": datetime.utcfromtimestamp(forecast.get_reference_time()),
+            "date": forecast.get_reference_time(),
             "temp_day": temperature["day"],
             "temp_night": temperature["night"],
             "status": forecast.get_status(),

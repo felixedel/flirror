@@ -26,7 +26,7 @@
             <div class="col-2"></div>
         </div>
         <div class="row">
-            {% for fc in forecasts %}
+            {% for fc in weather.forecasts %}
             <div class="col-2">
                 <p class="small">{{ fc.date.strftime("%a") | upper }}</p>
                 <p><i class="{{ fc.icon | weather_icon }}"></i></p>

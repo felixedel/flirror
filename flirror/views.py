@@ -1,10 +1,11 @@
 import abc
+from datetime import datetime
 
 from flask import current_app, render_template
 from flask.views import MethodView
-from pony.orm import db_session, desc, select
+from pony.orm import db_session, select
 
-from flirror.database import CalendarEvent, Weather
+from flirror.database import CalendarEvent, get_object_by_key
 
 
 class FlirrorMethodView(MethodView):
@@ -54,31 +55,29 @@ class WeatherView(FlirrorMethodView):
     rule = "/weather"
     template_name = "weather.html"
 
+    FLIRROR_OBJECT_KEY = "module_weather"
+
     def get(self):
-        # Get view-specific settings from config
-        settings = current_app.config["MODULES"].get(self.endpoint)
-        city = settings.get("city")
+        # TODO Get view-specific settings from config
+        # settings = current_app.config["MODULES"].get(self.endpoint)
+        # city = settings.get("city")
 
         # Get weather data from database
-        weather, forecasts = self.get_weather(city)
+        weather = self.get_weather()
 
         # Provide weather data in template context
-        context = self.get_context(weather=weather, forecasts=forecasts)
+        context = self.get_context(weather=weather)
         return render_template(self.template_name, **context)
 
-    @db_session
-    def get_weather(self, city):
-        # TODO Get the latest weather entry based on what?
-        # TODO Do we need to check the city at all? There should be only one
-        #  data-crawler per mirror ensuring that the correct data is crawled and
-        #  stored in the database.
-        for weather in select(w for w in Weather if w.city == city).order_by(
-            desc(Weather.date)
-        ):
-            # TODO Simply return the first weather we found
-            # NOTE Directly return the full list of forecasts, because it needs
-            # and active db_session to get it.
-            return weather, list(weather.forecasts)
+    def get_weather(self):
+        weather = get_object_by_key(self.FLIRROR_OBJECT_KEY)
+        # Change timestamps to datetime objects
+        # TODO This should be done before storing the data, but I'm not sure
+        # how to tell Pony how to serialize the datetime to JSON
+        weather["date"] = datetime.utcfromtimestamp(weather["date"])
+        for fc in weather["forecasts"]:
+            fc["date"] = datetime.utcfromtimestamp(fc["date"])
+        return weather
 
 
 class CalendarView(FlirrorMethodView):
