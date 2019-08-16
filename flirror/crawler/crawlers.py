@@ -30,9 +30,11 @@ class WeatherCrawler:
         try:
             obs = self.owm.weather_at_place(self.city)
         except UnauthorizedError as e:
+            LOGGER.error("Unable to authenticate to OWM API")
             raise CrawlerDataError from e
 
         # Get today's weather and weekly forecast
+        LOGGER.info("Requesting weather data from OWM for city '%s'", self.city)
         weather = obs.get_weather()
 
         weather_data = self._parse_weather_data(weather, self.temp_unit, self.city)
@@ -50,6 +52,7 @@ class WeatherCrawler:
     @property
     def owm(self):
         if self._owm is None:
+            LOGGER.debug("Authenticating to OWM API")
             self._owm = OWM(API_key=self.api_key, language=self.language, version="2.5")
         return self._owm
 
@@ -110,6 +113,7 @@ class CalendarCrawler:
         # Get the current time to store in the calender events list in the database
         now = time.time()
 
+        LOGGER.info("Requesting calendar list from Google API")
         service = googleapiclient.discovery.build(
             self.API_SERVICE_NAME, self.API_VERSION, credentials=credentials
         )
@@ -125,28 +129,31 @@ class CalendarCrawler:
             # Google responds with a RefreshError when the token is invalid as it
             # would try to refresh the token if the necessary fields are set
             # which we haven't)
-            LOGGER.error(
-                "Look's like flirror doesn't have the permission to access "
-                "your calendar."
+            raise CrawlerDataError(
+                "Could not retrieve calendar list. Maybe flirror doesn't have "
+                "the permission to access your calendar."
             )
-            return
 
         calendar_items = calendar_list.get("items")
-
-        [LOGGER.info("%s: %s", i["id"], i["summary"]) for i in calendar_items]
 
         cals_filtered = [
             ci for ci in calendar_items if ci["summary"].lower() in self.calendars
         ]
         if not cals_filtered:
             raise CrawlerDataError(
-                "Could not find calendar with names {}".format(self.calendars)
+                "None of the provided calendars matched the list I got from Google: {}".format(
+                    self.calendars
+                )
             )
 
         for cal_item in cals_filtered:
             # Call the calendar API
             _now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
-            LOGGER.info("Getting the upcoming 10 events")
+            LOGGER.info(
+                "Requesting upcoming %d events for calendar '%s'",
+                self.max_items,
+                cal_item["summary"],
+            )
             events_result = (
                 service.events()
                 .list(
@@ -160,6 +167,11 @@ class CalendarCrawler:
             )
             events = events_result.get("items", [])
             event_data = {"date": now, "events": []}
+            if not events:
+                LOGGER.warning(
+                    "Could not find any upcoming events for calendar '%s",
+                    cal_item["summary"],
+                )
             for event in events:
                 event_data["events"].append(self._parse_event_data(event))
 
