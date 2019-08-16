@@ -4,6 +4,7 @@ settings.cfg
 database.sqlite
 
 # Python
+.tox
 .eggs
 *.egg-info
 __pycache__
