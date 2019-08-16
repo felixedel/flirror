@@ -109,6 +109,8 @@ class CalendarCrawler:
 
     def crawl(self):
         credentials = GoogleOAuth(self.SCOPES).get_credentials()
+        if not credentials:
+            raise CrawlerDataError("Unable to authenticate to Google API")
 
         # Get the current time to store in the calender events list in the database
         now = time.time()

@@ -87,6 +87,13 @@ class GoogleOAuth:
         token_data = res.json()
         # Calculate an absolute expiry timestamp for simpler evaluation
         token_data["expires_in"] += now
+
+        # Only the inital access token provides the refresh token.
+        # Whenever we use the refresh token to request a new access token,
+        # those tokens come without another refresh token.
+        if "refresh_token" not in token_data:
+            token_data["refresh_token"] = refresh_token
+
         self._store_access_token(token_data)
         return token_data
 
@@ -136,7 +143,7 @@ class GoogleOAuth:
         while time.time() < device["expires_in"]:
             try:
                 now = time.time()
-                token_data = self._initial_access_token(device)
+                token_data = self._request_initial_access_token(device)
                 # Calculate an absolute expiry timestamp for simpler evaluation
                 token_data["expires_in"] += now
                 self._store_access_token(token_data)
@@ -150,7 +157,7 @@ class GoogleOAuth:
                 # Should be around 5 secs
                 time.sleep(device["interval"])
 
-    def _initial_access_token(self, device):
+    def _request_initial_access_token(self, device):
         # Use the device code for an initial token request
         flow = self._get_oauth_flow()
         data = {
