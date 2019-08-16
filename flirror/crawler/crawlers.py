@@ -146,6 +146,7 @@ class CalendarCrawler:
                 )
             )
 
+        all_events = []
         for cal_item in cals_filtered:
             # Call the calendar API
             _now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
@@ -166,21 +167,19 @@ class CalendarCrawler:
                 .execute()
             )
             events = events_result.get("items", [])
-            event_data = {"date": now, "events": []}
             if not events:
                 LOGGER.warning(
                     "Could not find any upcoming events for calendar '%s",
                     cal_item["summary"],
                 )
             for event in events:
-                event_data["events"].append(self._parse_event_data(event))
+                all_events.append(self._parse_event_data(event))
 
-            store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=event_data)
+        # Sort the events from multiple calendars
+        all_events = sorted(all_events, key=lambda k: k["start"])
 
-        # Sort the events from multiple calendars, but ignore the timezone
-        # TODO Is that still needed when we have a database?
-        # all_events = sorted(all_events, key=lambda k: k["start"].replace(tzinfo=None))
-        # return all_events[: self.max_items]
+        event_data = {"date": now, "events": all_events[: self.max_items]}
+        store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=event_data)
 
     @staticmethod
     def _parse_event_data(event):
