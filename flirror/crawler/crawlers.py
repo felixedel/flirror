@@ -1,15 +1,14 @@
 import logging
+import time
 from datetime import datetime
 
 import googleapiclient.discovery
 from dateutil.parser import parse as dtparse
 from google.auth.exceptions import RefreshError
-from pony.orm import db_session
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-
-from flirror.database import CalendarEvent, store_object_by_key
+from flirror.database import store_object_by_key
 from flirror.exceptions import CrawlerDataError
 from flirror.crawler.google_auth import GoogleOAuth
 
@@ -27,7 +26,6 @@ class WeatherCrawler:
         self.temp_unit = temp_unit
         self._owm = None
 
-    @db_session
     def crawl(self):
         try:
             obs = self.owm.weather_at_place(self.city)
@@ -91,6 +89,8 @@ class WeatherCrawler:
 
 class CalendarCrawler:
 
+    FLIRROR_OBJECT_KEY = "module_calendar"
+
     DEFAULT_MAX_ITEMS = 5
     # TODO Maybe we could use this also as a fallback if no calendar from the list matched
     DEFAULT_CALENDAR = "primary"
@@ -106,6 +106,9 @@ class CalendarCrawler:
 
     def crawl(self):
         credentials = GoogleOAuth(self.SCOPES).get_credentials()
+
+        # Get the current time to store in the calender events list in the database
+        now = time.time()
 
         service = googleapiclient.discovery.build(
             self.API_SERVICE_NAME, self.API_VERSION, credentials=credentials
@@ -142,13 +145,13 @@ class CalendarCrawler:
 
         for cal_item in cals_filtered:
             # Call the calendar API
-            now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
+            _now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
             LOGGER.info("Getting the upcoming 10 events")
             events_result = (
                 service.events()
                 .list(
                     calendarId=cal_item["id"],
-                    timeMin=now,
+                    timeMin=_now,
                     maxResults=self.max_items,
                     singleEvents=True,
                     orderBy="startTime",
@@ -156,8 +159,11 @@ class CalendarCrawler:
                 .execute()
             )
             events = events_result.get("items", [])
+            event_data = {"date": now, "events": []}
             for event in events:
-                self._parse_event_data(event)
+                event_data["events"].append(self._parse_event_data(event))
+
+            store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=event_data)
 
         # Sort the events from multiple calendars, but ignore the timezone
         # TODO Is that still needed when we have a database?
@@ -165,13 +171,12 @@ class CalendarCrawler:
         # return all_events[: self.max_items]
 
     @staticmethod
-    @db_session
     def _parse_event_data(event):
         start = event["start"].get("dateTime")
-        type = "time"
+        event_type = "time"
         if start is None:
             start = event["start"].get("date")
-            type = "day"
+            event_type = "day"
         end = event["end"].get("dateTime")
         if end is None:
             end = event["end"].get("date")
@@ -179,16 +184,16 @@ class CalendarCrawler:
         # Convert strings to dates and set timezone info to none,
         # as not all entries have time zone infos
         # TODO: How to fix this?
-        start = dtparse(start).replace(tzinfo=None)
-        end = dtparse(end).replace(tzinfo=None)
+        start = dtparse(start).replace(tzinfo=None).timestamp()
+        end = dtparse(end).replace(tzinfo=None).timestamp()
 
-        CalendarEvent(
+        return dict(
             summary=event["summary"],
             # start.date -> whole day
             # start.dateTime -> specific time
             start=start,
             end=end,
             # The type reflects either whole day events or a specific time span
-            type=type,
+            type=event_type,
             location=event.get("location"),
         )
