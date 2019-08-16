@@ -95,7 +95,7 @@ class GoogleOAuth:
             token_data["refresh_token"] = refresh_token
 
         self._store_access_token(token_data)
-        return token_data
+        return token_data["access_token"]
 
     def ask_for_access(self):
         # As the device code is only necessary for the initial token request,

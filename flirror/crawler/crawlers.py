@@ -121,11 +121,6 @@ class CalendarCrawler:
         )
 
         try:
-            # TODO Error on initial request (with initial access token):
-            #  ValueError: {'access_token': 'ya29.GltTB4hSMZCww2snLPzpma0Fkq9vriYAjdySDTiSfYdiCKupTczbbv5hwevK4DAV2r7mfXi4wMiV2cmYFSpWyaP3ukHGTUkWPLI3Z2B0YrwxqO4f9ycbS39yj3SS',
-            #  'expires_in': 1564303934.249835, 'refresh_token': '1/OrhaTqqkK349FgaGOwzjSN-j0JxsZfKbNRKyDPS3kzI',
-            #  'scope': 'https://www.googleapis.com/auth/calendar.readonly', 'token_type': 'Bearer'}
-            #  could not be converted to unicode
             calendar_list = service.calendarList().list().execute()
         except RefreshError:
             # Google responds with a RefreshError when the token is invalid as it
