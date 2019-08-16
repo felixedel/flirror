@@ -1,0 +1,15 @@
+# Application files
+settings.cfg
+.env
+database.sqlite
+
+# Python
+.eggs
+*.egg-info
+__pycache__
+build/
+dist/
+
+# Development and OS
+.idea
+.DS_Store

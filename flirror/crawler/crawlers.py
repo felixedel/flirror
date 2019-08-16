@@ -1,15 +1,14 @@
 import logging
+import time
 from datetime import datetime
 
 import googleapiclient.discovery
 from dateutil.parser import parse as dtparse
 from google.auth.exceptions import RefreshError
-from pony.orm import db_session
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-
-from flirror.database import CalendarEvent, Weather, WeatherForecast
+from flirror.database import store_object_by_key
 from flirror.exceptions import CrawlerDataError
 from flirror.crawler.google_auth import GoogleOAuth
 
@@ -17,6 +16,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class WeatherCrawler:
+
+    FLIRROR_OBJECT_KEY = "module_weather"
+
     def __init__(self, api_key, language, city, temp_unit):
         self.api_key = api_key
         self.language = language
@@ -24,7 +26,6 @@ class WeatherCrawler:
         self.temp_unit = temp_unit
         self._owm = None
 
-    @db_session
     def crawl(self):
         try:
             obs = self.owm.weather_at_place(self.city)
@@ -35,8 +36,6 @@ class WeatherCrawler:
         weather = obs.get_weather()
 
         weather_data = self._parse_weather_data(weather, self.temp_unit, self.city)
-        # Store the weather information in sqlite
-        weather_obj = Weather(**weather_data)
 
         # Get the forecast for the next days
         fc = self.owm.daily_forecast(self.city, limit=7)
@@ -44,9 +43,9 @@ class WeatherCrawler:
         # Skip the first element as we already have the weather for today
         for fc_weather in list(fc.get_forecast())[1:]:
             fc_data = self._parse_forecast_data(fc_weather, self.temp_unit)
-            print(fc_data)
-            # Store the forecast information in sqlite
-            WeatherForecast(weather=weather_obj, **fc_data)
+            weather_data["forecasts"].append(fc_data)
+
+        store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=weather_data)
 
     @property
     def owm(self):
@@ -59,24 +58,25 @@ class WeatherCrawler:
         temp_dict = weather.get_temperature(unit=temp_unit)
         return {
             "city": city,
-            "date": datetime.utcfromtimestamp(weather.get_reference_time()),
+            "date": weather.get_reference_time(),
             "temp_cur": temp_dict["temp"],
             "temp_min": temp_dict["temp_min"],
             "temp_max": temp_dict["temp_max"],
             "status": weather.get_status(),
             "detailed_status": weather.get_detailed_status(),
-            "sunrise_time": datetime.utcfromtimestamp(weather.get_sunrise_time()),
-            "sunset_time": datetime.utcfromtimestamp(weather.get_sunset_time()),
+            "sunrise_time": weather.get_sunrise_time(),
+            "sunset_time": weather.get_sunset_time(),
             # TODO For the forecast we don't need the "detailed" icon
             #  (no need to differentiate between day/night)
             "icon": weather.get_weather_icon_name(),
+            "forecasts": [],
         }
 
     @staticmethod
     def _parse_forecast_data(forecast, temp_unit):
         temperature = forecast.get_temperature(unit=temp_unit)
         return {
-            "date": datetime.utcfromtimestamp(forecast.get_reference_time()),
+            "date": forecast.get_reference_time(),
             "temp_day": temperature["day"],
             "temp_night": temperature["night"],
             "status": forecast.get_status(),
@@ -88,6 +88,8 @@ class WeatherCrawler:
 
 
 class CalendarCrawler:
+
+    FLIRROR_OBJECT_KEY = "module_calendar"
 
     DEFAULT_MAX_ITEMS = 5
     # TODO Maybe we could use this also as a fallback if no calendar from the list matched
@@ -104,6 +106,9 @@ class CalendarCrawler:
 
     def crawl(self):
         credentials = GoogleOAuth(self.SCOPES).get_credentials()
+
+        # Get the current time to store in the calender events list in the database
+        now = time.time()
 
         service = googleapiclient.discovery.build(
             self.API_SERVICE_NAME, self.API_VERSION, credentials=credentials
@@ -140,13 +145,13 @@ class CalendarCrawler:
 
         for cal_item in cals_filtered:
             # Call the calendar API
-            now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
+            _now = "{}Z".format(datetime.utcnow().isoformat())  # 'Z' indicates UTC time
             LOGGER.info("Getting the upcoming 10 events")
             events_result = (
                 service.events()
                 .list(
                     calendarId=cal_item["id"],
-                    timeMin=now,
+                    timeMin=_now,
                     maxResults=self.max_items,
                     singleEvents=True,
                     orderBy="startTime",
@@ -154,8 +159,11 @@ class CalendarCrawler:
                 .execute()
             )
             events = events_result.get("items", [])
+            event_data = {"date": now, "events": []}
             for event in events:
-                self._parse_event_data(event)
+                event_data["events"].append(self._parse_event_data(event))
+
+            store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=event_data)
 
         # Sort the events from multiple calendars, but ignore the timezone
         # TODO Is that still needed when we have a database?
@@ -163,13 +171,12 @@ class CalendarCrawler:
         # return all_events[: self.max_items]
 
     @staticmethod
-    @db_session
     def _parse_event_data(event):
         start = event["start"].get("dateTime")
-        type = "time"
+        event_type = "time"
         if start is None:
             start = event["start"].get("date")
-            type = "day"
+            event_type = "day"
         end = event["end"].get("dateTime")
         if end is None:
             end = event["end"].get("date")
@@ -177,16 +184,16 @@ class CalendarCrawler:
         # Convert strings to dates and set timezone info to none,
         # as not all entries have time zone infos
         # TODO: How to fix this?
-        start = dtparse(start).replace(tzinfo=None)
-        end = dtparse(end).replace(tzinfo=None)
+        start = dtparse(start).replace(tzinfo=None).timestamp()
+        end = dtparse(end).replace(tzinfo=None).timestamp()
 
-        CalendarEvent(
+        return dict(
             summary=event["summary"],
             # start.date -> whole day
             # start.dateTime -> specific time
             start=start,
             end=end,
             # The type reflects either whole day events or a specific time span
-            type=type,
+            type=event_type,
             location=event.get("location"),
         )
