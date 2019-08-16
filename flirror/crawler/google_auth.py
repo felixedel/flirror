@@ -42,6 +42,7 @@ class GoogleOAuth:
 
     @db_session
     def authenticate(self):
+        LOGGER.debug("Authenticating to Google calendar API")
         # Check if we already have a valid token
         LOGGER.debug("Check if we already have an access token")
         try:
