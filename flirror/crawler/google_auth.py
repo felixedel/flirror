@@ -5,9 +5,8 @@ import time
 import google.oauth2.credentials
 import requests
 from google_auth_oauthlib.flow import Flow
-from pony.orm import db_session, ObjectNotFound
 
-from flirror.database import FlirrorObject, store_object_by_key
+from flirror.database import get_object_by_key, store_object_by_key
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,33 +39,31 @@ class GoogleOAuth:
 
         return credentials
 
-    @db_session
     def authenticate(self):
         LOGGER.debug("Authenticating to Google calendar API")
         # Check if we already have a valid token
         LOGGER.debug("Check if we already have an access token")
-        try:
-            # The most common case is to refresh an existing token, so there should
-            # already be an existing database entry that we can update
-            token_obj = FlirrorObject["google_oauth_token"]
 
+        # The most common case is to refresh an existing token, so there should
+        # already be an existing database entry that we can update
+        token_obj = get_object_by_key("google_oauth_token")
+        if token_obj is None:
+            LOGGER.debug("Could not find any access token. Requesting an initial one.")
+            token = self.ask_for_access()
+        else:
             now = time.time()
-            if token_obj.value["expires_in"] <= now:
+            if token_obj["expires_in"] <= now:
                 LOGGER.debug(
                     "Found an access token, but expired. Requesting a new one."
                 )
                 # We use the refresh_token to get a new access token
-                token = self.refresh_access_token(token_obj.value["refresh_token"])
+                token = self.refresh_access_token(token_obj["refresh_token"])
             else:
-                token = token_obj.value["access_token"]
-        except ObjectNotFound:
-            LOGGER.debug("Could not find any access token. Requesting an initial one.")
-            token = self.ask_for_access()
+                token = token_obj["access_token"]
 
         # Hopefully, we got a token in any case now
         return token
 
-    @db_session
     def refresh_access_token(self, refresh_token):
         LOGGER.debug("Requesting a new access token using the last refresh token")
         # Use the refresh token to request a new access token
