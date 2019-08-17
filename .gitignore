@@ -10,6 +10,7 @@ database.sqlite
 __pycache__
 build/
 dist/
+htmlcov/
 
 # Development and OS
 .idea
