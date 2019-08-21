@@ -7,6 +7,7 @@ import requests
 from google_auth_oauthlib.flow import Flow
 
 from flirror.database import get_object_by_key, store_object_by_key
+from flirror.exceptions import GoogleOAuthError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -176,12 +177,17 @@ class GoogleOAuth:
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
         if client_secret_file is None:
-            LOGGER.warning(
+            raise GoogleOAuthError(
                 "Environment variable 'GOOGLE_OAUTH_CLIENT_SECRET' "
                 "must be set and point to a valid client-secret.json file"
             )
-            return
 
         # Let the flow creation parse the client_secret file
-        flow = Flow.from_client_secrets_file(client_secret_file, scopes=self.scopes)
+        try:
+            flow = Flow.from_client_secrets_file(client_secret_file, scopes=self.scopes)
+        except FileNotFoundError:
+            raise GoogleOAuthError(
+                "Could not load Google OAuth flow from '{}'. "
+                "Are you sure this file exists?".format(client_secret_file)
+            )
         return flow
