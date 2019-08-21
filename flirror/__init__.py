@@ -1,5 +1,6 @@
 from flask import Flask
 
+from .database import connect
 from .helpers import make_error_handler
 from .utils import weather_icon
 from .views import CalendarView, IndexView, MapView, WeatherView
@@ -29,5 +30,8 @@ def create_app():
 
     # Add custom Jinja2 template filters
     app.add_template_filter(weather_icon)
+
+    # Connect to the sqlite database
+    connect(app.config["DATABASE_FILE"])
 
     return app

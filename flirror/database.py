@@ -13,13 +13,6 @@ class FlirrorObject(db.Entity):
     value = Required(Json)
 
 
-# Connect to the database and create it if it doesn't exist
-db.bind(provider="sqlite", filename="database.sqlite", create_db=True)
-
-# Create the tables if they don't exist
-db.generate_mapping(create_tables=True)
-
-
 @db_session
 def store_object_by_key(key, value):
     try:
@@ -41,3 +34,12 @@ def get_object_by_key(key):
     except ObjectNotFound:
         LOGGER.error("Could not get object with key '%s'", key)
         return None
+
+
+def connect(database_file):
+    LOGGER.debug("Using database file '%s'", database_file)
+    # Connect to the database and create it if it doesn't exist
+    db.bind(provider="sqlite", filename=database_file, create_db=True)
+
+    # Create the tables if they don't exist
+    db.generate_mapping(create_tables=True)
