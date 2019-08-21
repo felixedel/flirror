@@ -31,6 +31,3 @@ def create_app():
     app.add_template_filter(weather_icon)
 
     return app
-
-
-app = create_app()
