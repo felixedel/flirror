@@ -1,9 +1,14 @@
+import time
+
 import requests_mock
+from freezegun import freeze_time
 
 from flirror.crawler.google_auth import GoogleOAuth
+from flirror.database import get_object_by_key
 
 
-def test_refresh_access_token(mock_google_env):
+@freeze_time("2019-08-21 00:00:00")
+def test_refresh_access_token(mock_google_env, mock_database):
     goauth = GoogleOAuth(scopes=[])
     with requests_mock.mock() as m:
         m.post(
@@ -28,3 +33,14 @@ def test_refresh_access_token(mock_google_env):
             "&refresh_token=refresh_token"
             "&grant_type=refresh_token"
         )
+
+        # Ensure that the token was stored in the database with the correct
+        # expiration time relative to now
+        stored_token = get_object_by_key("google_oauth_token")
+        assert stored_token == {
+            "access_token": "some_access_token",
+            "expires_in": time.time() + 3600,
+            "refresh_token": "refresh_token",
+            "scope": "https://www.googleapis.com/auth/calendar.readonly",
+            "token_type": "Bearer",
+        }
