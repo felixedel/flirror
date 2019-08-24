@@ -20,7 +20,9 @@ class GoogleOAuth:
     # We could use the class object to store the active token in the session
     # and check this one first for expiry, before retrieving a new one and store
     # that in the database and session.
-    def __init__(self, scopes):
+    def __init__(self, scopes=None):
+        if scopes is None:
+            scopes = []
         self.scopes = scopes
 
     def get_credentials(self):

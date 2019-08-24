@@ -12,7 +12,7 @@ from flirror.exceptions import GoogleOAuthError
 
 @freeze_time("2019-08-21 00:00:00")
 def test_refresh_access_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth(scopes=[])
+    goauth = GoogleOAuth()
     with requests_mock.mock() as m:
         m.post(
             goauth.GOOGLE_OAUTH_POLL_URL,
@@ -50,7 +50,7 @@ def test_refresh_access_token(mock_google_env, mock_database):
 
 
 def test_get_oauth_flow(mock_google_env):
-    goauth = GoogleOAuth(scopes=[])
+    goauth = GoogleOAuth()
 
     flow = goauth._get_oauth_flow()
     assert flow.client_config["client_id"] == "test_client_id"
@@ -58,7 +58,7 @@ def test_get_oauth_flow(mock_google_env):
 
 
 def test_get_oauth_flow_missing():
-    goauth = GoogleOAuth(scopes=[])
+    goauth = GoogleOAuth()
 
     # Ensure that a exception is raised because no GOOGLE_OAUTH_CLIENT_SECRET
     # envvar is set
@@ -71,7 +71,7 @@ def test_get_oauth_flow_missing():
 
 
 def test_get_oauth_flow_invalid():
-    goauth = GoogleOAuth(scopes=[])
+    goauth = GoogleOAuth()
 
     os.environ["GOOGLE_OAUTH_CLIENT_SECRET"] = "invalid_client_secret_file"
 
