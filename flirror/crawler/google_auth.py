@@ -156,6 +156,7 @@ class GoogleOAuth:
                 )
                 # Should be around 5 secs
                 time.sleep(device["interval"])
+        raise GoogleOAuthError("Device is expired, please restart the application.")
 
     def _request_initial_access_token(self, device):
         # Use the device code for an initial token request
