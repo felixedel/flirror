@@ -14,7 +14,7 @@ from flirror.exceptions import GoogleOAuthError
 
 @freeze_time("2019-08-21 00:00:00")
 def test_refresh_access_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=mock_database)
     with requests_mock.mock() as m:
         m.post(
             goauth.GOOGLE_OAUTH_POLL_URL,
@@ -41,7 +41,7 @@ def test_refresh_access_token(mock_google_env, mock_database):
 
         # Ensure that the token was stored in the database with the correct
         # expiration time relative to now
-        stored_token = get_object_by_key("google_oauth_token")
+        stored_token = get_object_by_key(mock_database, "google_oauth_token")
         assert stored_token == {
             "access_token": "some_access_token",
             "expires_in": time.time() + 3600,
@@ -52,7 +52,7 @@ def test_refresh_access_token(mock_google_env, mock_database):
 
 
 def test_request_initial_access_token(mock_google_env):
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=None)
 
     device = {
         "device_code": "device_code",
@@ -77,8 +77,8 @@ def test_request_initial_access_token(mock_google_env):
 
 
 @freeze_time("2019-08-21 00:00:00")
-def test_poll_for_initial_access_token(mock_google_env):
-    goauth = GoogleOAuth()
+def test_poll_for_initial_access_token(mock_google_env, mock_database):
+    goauth = GoogleOAuth(database=mock_database)
 
     device = {
         "device_code": "device_code",
@@ -96,7 +96,7 @@ def test_poll_for_initial_access_token(mock_google_env):
 
 @freeze_time("2019-08-21 00:00:00")
 def test_poll_for_initial_access_token_expired(mock_google_env):
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=None)
 
     device = {"expires_in": time.time() - 3600}
 
@@ -106,10 +106,10 @@ def test_poll_for_initial_access_token_expired(mock_google_env):
     assert "Device is expired, please restart the application." == str(excinfo.value)
 
 
-@freeze_time("2019-08-21 00:00:00", auto_tick_seconds=15)
-def test_poll_for_initial_access_token_retry(mock_google_env):
+@freeze_time("2019-08-21 00:00:00")
+def test_poll_for_initial_access_token_retry(mock_google_env, mock_database):
     # TODO Release and recreate database connection between tests
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=mock_database)
 
     # Mock the device with a 0 interval, so we don't actively wait between the calls
     # in this test.
@@ -136,9 +136,18 @@ def test_poll_for_initial_access_token_retry(mock_google_env):
         mock.call(device),
     ]
 
+    # TODO Provide the db object for the get_object_by_key lookup
+
+    # Ensure that the token was stored in the database with the correct
+    # expiration time relative to when the token was stored.
+    stored_token = get_object_by_key(mock_database, "google_oauth_token")
+    # TODO Validate that the expires_in is "increased" due to the retries? E.g. with
+    # freezegun's auto_tick_seconds.
+    assert stored_token == {"expires_in": time.time() + 3600}
+
 
 def test_get_oauth_flow(mock_google_env):
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=None)
 
     flow = goauth._get_oauth_flow()
     assert flow.client_config["client_id"] == "test_client_id"
@@ -146,7 +155,7 @@ def test_get_oauth_flow(mock_google_env):
 
 
 def test_get_oauth_flow_missing():
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=None)
 
     # Ensure that a exception is raised because no GOOGLE_OAUTH_CLIENT_SECRET
     # envvar is set
@@ -159,7 +168,7 @@ def test_get_oauth_flow_missing():
 
 
 def test_get_oauth_flow_invalid():
-    goauth = GoogleOAuth()
+    goauth = GoogleOAuth(database=None)
 
     os.environ["GOOGLE_OAUTH_CLIENT_SECRET"] = "invalid_client_secret_file"
 
