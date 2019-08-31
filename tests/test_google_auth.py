@@ -8,8 +8,68 @@ import requests_mock
 from freezegun import freeze_time
 
 from flirror.crawler.google_auth import GoogleOAuth
-from flirror.database import get_object_by_key
+from flirror.database import get_object_by_key, store_object_by_key
 from flirror.exceptions import GoogleOAuthError
+
+
+def test_get_credentials(mock_google_env):
+    goauth = GoogleOAuth(database=None)
+    with mock.patch.object(goauth, "authenticate", return_value="patched_access_token"):
+        credentials = goauth.get_credentials()
+
+    assert credentials.client_id == "test_client_id"
+    assert credentials.client_secret == "test_client_secret"
+    assert credentials.token == "patched_access_token"
+
+
+def test_get_credentials_failed(mock_google_env):
+    goauth = GoogleOAuth(database=None)
+    with mock.patch.object(goauth, "authenticate", return_value=None):
+        credentials = goauth.get_credentials()
+
+    assert credentials is None
+
+
+def test_authenticate_no_existing_token(mock_google_env, mock_database):
+    goauth = GoogleOAuth(database=mock_database)
+    with mock.patch.object(goauth, "ask_for_access", return_value="new_access_token"):
+        token = goauth.authenticate()
+
+    assert token == "new_access_token"
+
+
+@freeze_time("2019-08-21 00:00:00")
+def test_authenticate_expired_token(mock_google_env, mock_database):
+    goauth = GoogleOAuth(database=mock_database)
+    expired_token_data = {
+        "access_token": "expired_access_token",
+        "expires_in": time.time() - 3600,
+        "refresh_token": "refresh_token",
+    }
+    # Store expired token in database, so it will be found in the authentication process
+    store_object_by_key(mock_database, "google_oauth_token", expired_token_data)
+
+    with mock.patch.object(
+        goauth, "refresh_access_token", return_value="new_access_token"
+    ):
+        token = goauth.authenticate()
+
+    assert token == "new_access_token"
+
+
+def test_authenticate_valid_token(mock_google_env, mock_database):
+    goauth = GoogleOAuth(database=mock_database)
+    valid_token_data = {
+        "access_token": "valid_access_token",
+        "expires_in": time.time() + 3600,
+        "refresh_token": "refresh_token",
+    }
+
+    # Store valid token in database, so it will be found in the authentication process
+    store_object_by_key(mock_database, "google_oauth_token", valid_token_data)
+
+    token = goauth.authenticate()
+    assert token == "valid_access_token"
 
 
 @freeze_time("2019-08-21 00:00:00")
@@ -49,6 +109,28 @@ def test_refresh_access_token(mock_google_env, mock_database):
             "scope": "https://www.googleapis.com/auth/calendar.readonly",
             "token_type": "Bearer",
         }
+
+
+def test_ask_for_access(mock_google_env):
+    goauth = GoogleOAuth(database=None)
+
+    device = {
+        "device_code": "device_code",
+        "verification_url": "some-google-device-url",
+        "expires_in": 3600,
+        "user_code": "ABCD-EFGH",
+    }
+
+    token_data = {"access_token": "new_access_token"}
+
+    with requests_mock.mock() as m, mock.patch.object(
+        goauth, "poll_for_initial_access_token", return_value=token_data
+    ):
+        m.post(goauth.GOOGLE_OAUTH_ACCESS_URL, json=device)
+
+        token = goauth.ask_for_access()
+
+        assert token == "new_access_token"
 
 
 def test_request_initial_access_token(mock_google_env):
