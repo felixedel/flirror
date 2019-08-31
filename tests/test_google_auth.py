@@ -239,6 +239,11 @@ def test_get_oauth_flow(mock_google_env):
 def test_get_oauth_flow_missing():
     goauth = GoogleOAuth(database=None)
 
+    # NOTE (felix): Ensure the variable is missing in the environment
+    # (e.g. in case the test is not executed from a clean tox env but directly
+    # in the user's env).
+    os.unsetenv("GOOGLE_OAUTH_CLIENT_SECRET")
+
     # Ensure that a exception is raised because no GOOGLE_OAUTH_CLIENT_SECRET
     # envvar is set
     with pytest.raises(GoogleOAuthError) as excinfo:
