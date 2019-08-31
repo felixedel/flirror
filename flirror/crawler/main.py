@@ -6,6 +6,7 @@ from flask.config import Config
 
 from flirror import FLIRROR_SETTINGS_ENV
 from flirror.crawler.crawlers import CalendarCrawler, WeatherCrawler
+from flirror.database import create_database_and_entities
 
 
 LOGGER = logging.getLogger(__name__)
@@ -62,13 +63,18 @@ def crawl(ctx):
 
     config = ctx.obj["config"]
 
+    # Connect to the sqlite database
+    db = create_database_and_entities(
+        provider="sqlite", filename=config["DATABASE_FILE"], create_db=True
+    )
+
     # TODO Look up crawlers from config file
     for name, crawler_cls in [
         ("weather", WeatherCrawler),
         ("calendar", CalendarCrawler),
     ]:
         settings = config["MODULES"].get(name)
-        crawler = crawler_cls(**settings)
+        crawler = crawler_cls(database=db, **settings)
         crawler.crawl()
 
 

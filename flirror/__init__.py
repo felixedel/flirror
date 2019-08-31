@@ -1,5 +1,6 @@
 from flask import Flask
 
+from .database import create_database_and_entities
 from .helpers import make_error_handler
 from .utils import weather_icon
 from .views import CalendarView, IndexView, MapView, WeatherView
@@ -30,7 +31,19 @@ def create_app():
     # Add custom Jinja2 template filters
     app.add_template_filter(weather_icon)
 
+    # Connect to the sqlite database
+    # TODO (felix): Maybe we could drop the 'create_db' here?
+    # Usually, it should be sufficient, when the crawler creates the database. If it
+    # is not created here, we should just provide somee message to start the crawler.
+    db = create_database_and_entities(
+        provider="sqlite", filename=app.config["DATABASE_FILE"], create_db=True
+    )
+
+    # Store the dabase connection in flask's extensions dictionary.
+    # TODO (felix): Is there a better place to store it?
+    if not hasattr(app, "extensions"):
+        app.extensions = {}
+    if "database" not in app.extensions:
+        app.extensions["database"] = db
+
     return app
-
-
-app = create_app()

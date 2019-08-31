@@ -7,6 +7,7 @@ import requests
 from google_auth_oauthlib.flow import Flow
 
 from flirror.database import get_object_by_key, store_object_by_key
+from flirror.exceptions import GoogleOAuthError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -19,8 +20,11 @@ class GoogleOAuth:
     # We could use the class object to store the active token in the session
     # and check this one first for expiry, before retrieving a new one and store
     # that in the database and session.
-    def __init__(self, scopes):
+    def __init__(self, database, scopes=None):
+        if scopes is None:
+            scopes = []
         self.scopes = scopes
+        self.database = database
 
     def get_credentials(self):
         token = self.authenticate()
@@ -46,7 +50,7 @@ class GoogleOAuth:
 
         # The most common case is to refresh an existing token, so there should
         # already be an existing database entry that we can update
-        token_obj = get_object_by_key("google_oauth_token")
+        token_obj = get_object_by_key(self.database, "google_oauth_token")
         if token_obj is None:
             LOGGER.debug("Could not find any access token. Requesting an initial one.")
             token = self.ask_for_access()
@@ -153,6 +157,7 @@ class GoogleOAuth:
                 )
                 # Should be around 5 secs
                 time.sleep(device["interval"])
+        raise GoogleOAuthError("Device is expired, please restart the application.")
 
     def _request_initial_access_token(self, device):
         # Use the device code for an initial token request
@@ -169,19 +174,23 @@ class GoogleOAuth:
 
         return res.json()
 
-    @staticmethod
-    def _store_access_token(token_data):
-        store_object_by_key(key="google_oauth_token", value=token_data)
+    def _store_access_token(self, token_data):
+        store_object_by_key(self.database, key="google_oauth_token", value=token_data)
 
     def _get_oauth_flow(self):
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
         if client_secret_file is None:
-            LOGGER.warning(
+            raise GoogleOAuthError(
                 "Environment variable 'GOOGLE_OAUTH_CLIENT_SECRET' "
                 "must be set and point to a valid client-secret.json file"
             )
-            return
 
         # Let the flow creation parse the client_secret file
-        flow = Flow.from_client_secrets_file(client_secret_file, scopes=self.scopes)
+        try:
+            flow = Flow.from_client_secrets_file(client_secret_file, scopes=self.scopes)
+        except FileNotFoundError:
+            raise GoogleOAuthError(
+                "Could not load Google OAuth flow from '{}'. "
+                "Are you sure this file exists?".format(client_secret_file)
+            )
         return flow

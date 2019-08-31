@@ -69,7 +69,8 @@ class WeatherView(FlirrorMethodView):
         return render_template(self.template_name, **context)
 
     def get_weather(self):
-        weather = get_object_by_key(self.FLIRROR_OBJECT_KEY)
+        db = current_app.extensions["database"]
+        weather = get_object_by_key(db, self.FLIRROR_OBJECT_KEY)
         # Change timestamps to datetime objects
         # TODO This should be done before storing the data, but I'm not sure
         # how to tell Pony how to serialize the datetime to JSON
@@ -99,7 +100,8 @@ class CalendarView(FlirrorMethodView):
         return render_template(self.template_name, **context)
 
     def get_events(self):
-        data = get_object_by_key(self.FLIRROR_OBJECT_KEY)
+        db = current_app.extensions["database"]
+        data = get_object_by_key(db, self.FLIRROR_OBJECT_KEY)
         # Change timestamps to datetime objects
         # TODO This should be done before storing the data, but I'm not sure
         # how to tell Pony how to serialize the datetime to JSON

@@ -19,7 +19,8 @@ class WeatherCrawler:
 
     FLIRROR_OBJECT_KEY = "module_weather"
 
-    def __init__(self, api_key, language, city, temp_unit):
+    def __init__(self, database, api_key, language, city, temp_unit):
+        self.database = database
         self.api_key = api_key
         self.language = language
         self.city = city
@@ -47,7 +48,9 @@ class WeatherCrawler:
             fc_data = self._parse_forecast_data(fc_weather, self.temp_unit)
             weather_data["forecasts"].append(fc_data)
 
-        store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=weather_data)
+        store_object_by_key(
+            self.database, key=self.FLIRROR_OBJECT_KEY, value=weather_data
+        )
 
     @property
     def owm(self):
@@ -103,12 +106,13 @@ class CalendarCrawler:
 
     SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
-    def __init__(self, calendars, max_items=DEFAULT_MAX_ITEMS):
+    def __init__(self, database, calendars, max_items=DEFAULT_MAX_ITEMS):
+        self.database = database
         self.calendars = calendars
         self.max_items = max_items
 
     def crawl(self):
-        credentials = GoogleOAuth(self.SCOPES).get_credentials()
+        credentials = GoogleOAuth(self.database, self.SCOPES).get_credentials()
         if not credentials:
             raise CrawlerDataError("Unable to authenticate to Google API")
 
@@ -176,7 +180,9 @@ class CalendarCrawler:
         all_events = sorted(all_events, key=lambda k: k["start"])
 
         event_data = {"date": now, "events": all_events[: self.max_items]}
-        store_object_by_key(key=self.FLIRROR_OBJECT_KEY, value=event_data)
+        store_object_by_key(
+            self.database, key=self.FLIRROR_OBJECT_KEY, value=event_data
+        )
 
     @staticmethod
     def _parse_event_data(event):
