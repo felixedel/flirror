@@ -4,6 +4,7 @@ from datetime import datetime
 
 import arrow
 import googleapiclient.discovery
+from alpha_vantage.timeseries import TimeSeries
 from google.auth.exceptions import RefreshError
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
@@ -235,8 +236,46 @@ class CalendarCrawler(Crawler):
         )
 
 
+class StocksCrawler(Crawler):
+
+    FLIRROR_OBJECT_KEY = "module_stocks"
+
+    def __init__(self, crawler_id, database, api_key, symbols, interval=None):
+        super().__init__(crawler_id, database, interval)
+        self.api_key = api_key
+        self.symbols = symbols
+
+    def crawl(self):
+        ts = TimeSeries(key="YOUR_API_KEY")
+        stocks_data = {"_timestamp": time.time(), "stocks": []}
+
+        # Get the data from the alpha vantage API
+        for symbol, alias in self.symbols:
+            LOGGER.info(
+                "Requesting intraday for symbol '%s' with alias '%s'", symbol, alias
+            )
+            data, meta_data = ts.get_intraday(symbol)
+
+            # TODO Use meta_data to calculate correct timezone information
+            # {'1. Information': 'Intraday (15min) open, high, low, close prices and volume',
+            # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
+            # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
+
+            stocks_data["stocks"].append(
+                {"symbol": symbol, "alias": alias, "data": data, "meta_data": meta_data}
+            )
+
+        store_object_by_key(
+            self.database, key=self.FLIRROR_OBJECT_KEY, value=stocks_data
+        )
+
+
 class CrawlerFactory:
-    CRAWLERS = {"weather": WeatherCrawler, "calendar": CalendarCrawler}
+    CRAWLERS = {
+        "weather": WeatherCrawler,
+        "calendar": CalendarCrawler,
+        "stocks": StocksCrawler,
+    }
 
     def get_crawler(self, _type):
         # Get a crawler class based on its type specified in the config

@@ -6,6 +6,7 @@ with open("README.md") as readme:
     long_description = readme.read()
 
 requires = [
+    "alpha_vantage",
     "arrow",
     "click",
     "flask",
