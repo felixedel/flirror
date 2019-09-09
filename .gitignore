@@ -6,11 +6,14 @@ database.sqlite
 # Python
 .tox
 .eggs
+.coverage
 *.egg-info
+.pytest_cache
 __pycache__
 build/
 dist/
 htmlcov/
+coverage.xml
 
 # Development and OS
 .idea
