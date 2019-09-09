@@ -47,6 +47,7 @@ class WeatherCrawler(Crawler):
 
         # Get today's weather and weekly forecast
         LOGGER.info("Requesting weather data from OWM for city '%s'", self.city)
+        now = time.time()
         weather = obs.get_weather()
 
         weather_data = self._parse_weather_data(weather, self.temp_unit, self.city)
@@ -58,6 +59,9 @@ class WeatherCrawler(Crawler):
         for fc_weather in list(fc.get_forecast())[1:]:
             fc_data = self._parse_forecast_data(fc_weather, self.temp_unit)
             weather_data["forecasts"].append(fc_data)
+
+        # Store the crawl timestamp
+        weather_data["_timestamp"] = now
 
         store_object_by_key(
             self.database, key=self.FLIRROR_OBJECT_KEY, value=weather_data
@@ -197,7 +201,7 @@ class CalendarCrawler(Crawler):
         # Sort the events from multiple calendars
         all_events = sorted(all_events, key=lambda k: k["start"])
 
-        event_data = {"date": now, "events": all_events[: self.max_items]}
+        event_data = {"_timestamp": now, "events": all_events[: self.max_items]}
         store_object_by_key(
             self.database, key=self.FLIRROR_OBJECT_KEY, value=event_data
         )
