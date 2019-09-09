@@ -2,7 +2,7 @@ from flask import Flask
 
 from .database import create_database_and_entities
 from .helpers import make_error_handler
-from .utils import weather_icon
+from .utils import prettydate, weather_icon
 from .views import CalendarView, IndexView, MapView, WeatherView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -30,6 +30,7 @@ def create_app():
 
     # Add custom Jinja2 template filters
     app.add_template_filter(weather_icon)
+    app.add_template_filter(prettydate)
 
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?
