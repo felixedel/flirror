@@ -5,8 +5,9 @@ import click
 from flask.config import Config
 
 from flirror import FLIRROR_SETTINGS_ENV
-from flirror.crawler.crawlers import CalendarCrawler, WeatherCrawler
+from flirror.crawler.crawlers import CrawlerFactory
 from flirror.database import create_database_and_entities
+from flirror.exceptions import CrawlerConfigError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -68,13 +69,28 @@ def crawl(ctx):
         provider="sqlite", filename=config["DATABASE_FILE"], create_db=True
     )
 
-    # TODO Look up crawlers from config file
-    for name, crawler_cls in [
-        ("weather", WeatherCrawler),
-        ("calendar", CalendarCrawler),
-    ]:
-        settings = config["MODULES"].get(name)
-        crawler = crawler_cls(database=db, **settings)
+    # Create the crawler factory to use for initializing new crawlers
+    factory = CrawlerFactory()
+
+    # Look up crawlers from config file
+    for crawler_id, crawler_config in config.get("MODULES", {}).items():
+        crawler_type = crawler_config.pop("type")
+        # TODO Error handling for wrong/missing keys
+        LOGGER.info(
+            "Initializing crawler of type '%s' with id '%s'", crawler_type, crawler_id
+        )
+
+        # Initialize the crawler
+        try:
+            crawler_cls = factory.get_crawler(crawler_type)
+        except CrawlerConfigError:
+            LOGGER.exception(
+                "Could not initialize crawler '%s'. Skipping this crawler.", crawler_id
+            )
+            continue
+        crawler = crawler_cls(crawler_id=crawler_id, database=db, **crawler_config)
+
+        # Do the actual crawl
         crawler.crawl()
 
 

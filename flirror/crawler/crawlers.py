@@ -9,7 +9,7 @@ from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
 from flirror.database import store_object_by_key
-from flirror.exceptions import CrawlerDataError
+from flirror.exceptions import CrawlerConfigError, CrawlerDataError
 from flirror.crawler.google_auth import GoogleOAuth
 
 LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,8 @@ class WeatherCrawler:
 
     FLIRROR_OBJECT_KEY = "module_weather"
 
-    def __init__(self, database, api_key, language, city, temp_unit):
+    def __init__(self, crawler_id, database, api_key, language, city, temp_unit):
+        self.id = crawler_id
         self.database = database
         self.api_key = api_key
         self.language = language
@@ -106,7 +107,8 @@ class CalendarCrawler:
 
     SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
-    def __init__(self, database, calendars, max_items=DEFAULT_MAX_ITEMS):
+    def __init__(self, crawler_id, database, calendars, max_items=DEFAULT_MAX_ITEMS):
+        self.id = crawler_id
         self.database = database
         self.calendars = calendars
         self.max_items = max_items
@@ -211,3 +213,14 @@ class CalendarCrawler:
             type=event_type,
             location=event.get("location"),
         )
+
+
+class CrawlerFactory:
+    CRAWLERS = {"weather": WeatherCrawler, "calendar": CalendarCrawler}
+
+    def get_crawler(self, _type):
+        # Get a crawler class based on its type specified in the config
+        crawler_cls = self.CRAWLERS.get(_type)
+        if crawler_cls is None:
+            raise CrawlerConfigError("Invalid crawler type '{}'".format(_type))
+        return crawler_cls
