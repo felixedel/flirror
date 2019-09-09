@@ -14,6 +14,7 @@ requires = [
     "pony",
     "pyowm",
     "python-dateutil",
+    "schedule",
 ]
 
 setup(
