@@ -15,13 +15,23 @@ from flirror.crawler.google_auth import GoogleOAuth
 LOGGER = logging.getLogger(__name__)
 
 
-class WeatherCrawler:
+class Crawler:
+    def __init__(self, crawler_id, database, interval=None):
+        if interval is None:
+            interval = "5m"
+        self.id = crawler_id
+        self.database = database
+        self.interval = interval
+
+
+class WeatherCrawler(Crawler):
 
     FLIRROR_OBJECT_KEY = "module_weather"
 
-    def __init__(self, crawler_id, database, api_key, language, city, temp_unit):
-        self.id = crawler_id
-        self.database = database
+    def __init__(
+        self, crawler_id, database, api_key, language, city, temp_unit, interval=None
+    ):
+        super().__init__(crawler_id, database, interval)
         self.api_key = api_key
         self.language = language
         self.city = city
@@ -94,7 +104,7 @@ class WeatherCrawler:
         }
 
 
-class CalendarCrawler:
+class CalendarCrawler(Crawler):
 
     FLIRROR_OBJECT_KEY = "module_calendar"
 
@@ -107,9 +117,15 @@ class CalendarCrawler:
 
     SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
-    def __init__(self, crawler_id, database, calendars, max_items=DEFAULT_MAX_ITEMS):
-        self.id = crawler_id
-        self.database = database
+    def __init__(
+        self,
+        crawler_id,
+        database,
+        calendars,
+        max_items=DEFAULT_MAX_ITEMS,
+        interval=None,
+    ):
+        super().__init__(crawler_id, database, interval)
         self.calendars = calendars
         self.max_items = max_items
 

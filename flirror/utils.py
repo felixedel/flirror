@@ -1,3 +1,9 @@
+import logging
+import re
+
+
+LOGGER = logging.getLogger(__name__)
+
 weather_icons = {
     "01d": "wi wi-day-sunny",
     "02d": "wi wi-day-cloudy",
@@ -22,3 +28,18 @@ weather_icons = {
 
 def weather_icon(icon_name):
     return weather_icons.get(icon_name)
+
+
+def parse_interval_string(interval_string):
+    # Split the string into <number><unit>
+    pattern = re.compile(r"^(\d+)(\D+)$")
+    match = pattern.match(interval_string)
+
+    if not match:
+        LOGGER.error("Could not parse interval_string '%s'", interval_string)
+        return None, None
+
+    interval = int(match.group(1))
+    unit = match.group(2)
+
+    return interval, unit
