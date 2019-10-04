@@ -14,7 +14,6 @@ requires = [
     "google-auth-oauthlib",
     "pony",
     "pyowm",
-    "python-dateutil",
     "schedule",
 ]
 
