@@ -34,13 +34,15 @@ def weather_icon(icon_name):
 
 
 def prettydate(date):
-    now = datetime.now()  # timezone.utc)
     """
     Return the relative timeframe between the given date and now.
     e.g. 'Just now', 'x days ago', 'x hours ago', ...
     When the difference is greater than 7 days, the timestamp will be returned
     instead.
     """
+    now = datetime.now()  # timezone.utc)
+    if isinstance(date, float):
+        date = datetime.utcfromtimestamp(date)
     diff = now - date
     # Show the timestamp rather than the relative timeframe when the difference
     # is greater than 7 days
