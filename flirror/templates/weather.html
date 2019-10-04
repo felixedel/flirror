@@ -9,7 +9,7 @@
     <div class="card weather-card bg-dark text-white text-center">
         <div class="card-body pb-3">
         <h3 class="card-title font-weight-bold">{{ weather.city }}</h3>
-            <p class="card-text"><span class="mr-3">{{ weather.date.strftime("%A") | upper }}</span>{{ weather.date.strftime("%b %d, %Y")}}</p>
+            <p class="card-text"><span class="mr-3">{{ weather.date | format_time("%A") | upper }}</span>{{ weather.date | format_time("%b %d, %Y")}}</p>
             <p><i class="fas fa-sync-alt"></i> {{ weather._timestamp | prettydate }}</p>
             <div class="row mb-3">
                 <div class="col-2"></div>
@@ -29,7 +29,7 @@
         <div class="row">
             {% for fc in weather.forecasts %}
             <div class="col-2">
-                <p class="small">{{ fc.date.strftime("%a") | upper }}</p>
+                <p class="small">{{ fc.date | format_time("%a") | upper }}</p>
                 <p><i class="{{ fc.icon | weather_icon }}"></i></p>
                 <p class="small">
                     {{ "%2.0f" % fc.temp_day }}° C / {{ "%2.0f" % fc.temp_night }}° C

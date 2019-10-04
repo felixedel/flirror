@@ -62,3 +62,8 @@ def parse_interval_string(interval_string):
     unit = match.group(2)
 
     return interval, unit
+
+
+def format_time(timestamp, format):
+    date = datetime.utcfromtimestamp(timestamp)
+    return date.strftime(format)
