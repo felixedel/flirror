@@ -2,8 +2,8 @@ import logging
 import time
 from datetime import datetime
 
+import arrow
 import googleapiclient.discovery
-from dateutil.parser import parse as dtparse
 from google.auth.exceptions import RefreshError
 from pyowm import OWM
 from pyowm.exceptions.api_response_error import UnauthorizedError
@@ -220,8 +220,8 @@ class CalendarCrawler(Crawler):
         # Convert strings to dates and set timezone info to none,
         # as not all entries have time zone infos
         # TODO: How to fix this?
-        start = dtparse(start).replace(tzinfo=None).timestamp()
-        end = dtparse(end).replace(tzinfo=None).timestamp()
+        start = arrow.get(start).replace(tzinfo=None).timestamp
+        end = arrow.get(end).replace(tzinfo=None).timestamp
 
         return dict(
             summary=event["summary"],
