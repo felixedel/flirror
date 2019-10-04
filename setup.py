@@ -6,6 +6,7 @@ with open("README.md") as readme:
     long_description = readme.read()
 
 requires = [
+    "arrow",
     "click",
     "flask",
     "google-api-python-client",

@@ -64,6 +64,8 @@ class WeatherView(FlirrorMethodView):
         # Get weather data from database
         weather = self.get_weather()
 
+        weather["_timestamp"] = datetime.utcfromtimestamp(weather["_timestamp"])
+
         # Provide weather data in template context
         context = self.get_context(weather=weather)
         return render_template(self.template_name, **context)
@@ -96,7 +98,7 @@ class CalendarView(FlirrorMethodView):
 
         data = self.get_events()
         # Provide events in template context
-        context = self.get_context(date=data["date"], events=data["events"])
+        context = self.get_context(**data)
         return render_template(self.template_name, **context)
 
     def get_events(self):
@@ -108,6 +110,8 @@ class CalendarView(FlirrorMethodView):
         for event in data["events"]:
             event["start"] = datetime.utcfromtimestamp(event["start"])
             event["end"] = datetime.utcfromtimestamp(event["end"])
+
+        data["_timestamp"] = datetime.utcfromtimestamp(data["_timestamp"])
         return data
 
 

@@ -3,6 +3,7 @@
 {% block body %}
 <div class="container">
     <div class="card bg-dark text-white">
+        <p><i class="fas fa-sync-alt"></i> {{ _timestamp | prettydate }}</p>
         {% for item in events %}
         <div class="row mb-2">
             <div class="col-3 text-right">
