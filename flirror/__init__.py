@@ -1,5 +1,6 @@
 from flask import Flask
 
+from .api import WeatherApi
 from .database import create_database_and_entities
 from .helpers import make_error_handler
 from .utils import format_time, prettydate, weather_icon
@@ -17,7 +18,10 @@ def create_app():
     # The central index page showing all tiles
     IndexView.register_url(app)
 
-    # The modules
+    # The modules API
+    WeatherApi.register_url(app)
+
+    # The module views (only necessary for debug mode?)
     WeatherView.register_url(app)
     CalendarView.register_url(app)
     MapView.register_url(app)

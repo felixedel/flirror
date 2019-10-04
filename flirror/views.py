@@ -1,7 +1,8 @@
 import abc
 from datetime import datetime
 
-from flask import current_app, render_template
+import requests
+from flask import current_app, render_template, url_for
 from flask.views import MethodView
 
 from flirror.database import get_object_by_key
@@ -61,25 +62,14 @@ class WeatherView(FlirrorMethodView):
         # settings = current_app.config["MODULES"].get(self.endpoint)
         # city = settings.get("city")
 
-        # Get weather data from database
-        weather = self.get_weather()
-
-        weather["_timestamp"] = datetime.utcfromtimestamp(weather["_timestamp"])
+        res = requests.get(url_for("api-weather", _external=True))
+        # TODO Error handling?
+        weather = res.json()
+        print(weather)
 
         # Provide weather data in template context
         context = self.get_context(weather=weather)
         return render_template(self.template_name, **context)
-
-    def get_weather(self):
-        db = current_app.extensions["database"]
-        weather = get_object_by_key(db, self.FLIRROR_OBJECT_KEY)
-        # Change timestamps to datetime objects
-        # TODO This should be done before storing the data, but I'm not sure
-        # how to tell Pony how to serialize the datetime to JSON
-        weather["date"] = datetime.utcfromtimestamp(weather["date"])
-        for fc in weather["forecasts"]:
-            fc["date"] = datetime.utcfromtimestamp(fc["date"])
-        return weather
 
 
 class CalendarView(FlirrorMethodView):
