@@ -1,8 +1,16 @@
 <div class="container">
-    <div class="meta-header">
-        <p><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</p>
+    {% if module.error %}
+    <div class="card bg-dark text-white">
+        <p>ERROR: {{ module.error }}</p>
+    </div>
+    {% else %}
+    <div class="meta-header row">
+        <div class="col-12 text-right">
+            <p><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</p>
+        </div>
     </div>
     <div class="card bg-dark text-white">
         {% block body %}{% endblock %}
     </div>
+    {% endif %}
 </div>
