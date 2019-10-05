@@ -1,6 +1,7 @@
 import abc
 
 import requests
+import werkzeug
 from flask import current_app, render_template, url_for
 from flask.views import MethodView
 
@@ -42,7 +43,34 @@ class IndexView(FlirrorMethodView):
     template_name = "index.html"
 
     def get(self):
-        context = self.get_context(**current_app.config["MODULES"])
+
+        # Here we have place for overall meta data (like flirror version or so)
+        all_data = {"modules": {}}
+
+        for module_id, module_config in current_app.config.get("MODULES", {}).items():
+            module_type = module_config.get("type")
+            # TODO Error handling for wrong/missing keys
+
+            error = None
+            try:
+                res = requests.get(url_for(f"api-{module_type}", _external=True))
+                # TODO Error handling?
+                # Add the error message as module data, so it could be displayed with
+                # a general module-error template that can be included in the module.html
+                # in case this error field is set.
+                res.raise_for_status
+                data = res.json()
+            except werkzeug.routing.BuildError as e:
+                error = str(e)
+
+            all_data["modules"][module_id] = {
+                "type": module_type,
+                "data": data,
+                "error": error,
+            }
+
+        print(all_data)
+        context = self.get_context(**all_data)
         return render_template(self.template_name, **context)
 
 

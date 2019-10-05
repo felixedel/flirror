@@ -1,0 +1,10 @@
+{% extends "module.html" %}
+
+{% block body %}
+<div class="container">
+    <p class="module-text">
+        <i class="fas fa-map"></i>
+        This could show a map for the route from {{ module.data.route.from }} to {{ module.data.route.to }}
+    </p>
+</div>
+{% endblock %}

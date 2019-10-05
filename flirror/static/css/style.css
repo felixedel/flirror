@@ -2,8 +2,12 @@ body {
     font-family: Roboto,sans-serif;
 }
 
-iframe {
-    border-width: 0;
+.card {
+    border: none;
+}
+
+.card-footer {
+    border-top: none;
 }
 
 .weather-icon {
