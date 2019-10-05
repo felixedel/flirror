@@ -42,7 +42,35 @@ class IndexView(FlirrorMethodView):
     template_name = "index.html"
 
     def get(self):
-        context = self.get_context(**current_app.config["MODULES"])
+
+        # Here we have place for overall meta data (like flirror version or so)
+        all_data = {"modules": {}}
+
+        for module_id, module_config in current_app.config.get("MODULES", {}).items():
+            module_type = module_config.get("type")
+            # TODO Error handling for wrong/missing keys
+
+            res = requests.get(url_for(f"api-{module_type}", _external=True))
+            # TODO Error handling?
+            # Add the error message as module data, so it could be displayed with
+            # a general module-error template that can be included in the module.html
+            # in case this error field is set.
+            data = res.json()
+
+            all_data["modules"][module_id] = {
+                "type": module_type,
+                "data": data,
+            }
+
+        # TODO dummy data for map tile
+        all_data["modules"]["map"] = {
+            "data": current_app.config["MODULES"].get("map"),
+            "type": "map",
+        }
+        all_data["modules"]["map"]["data"]["_timestamp"] = 12345.0
+
+        print(all_data)
+        context = self.get_context(**all_data)
         return render_template(self.template_name, **context)
 
 

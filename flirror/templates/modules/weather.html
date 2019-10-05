@@ -1,0 +1,39 @@
+{% extends "module.html" %}
+
+{% block body %}
+<div class="card-body text-center pb-3">
+    <h3 class="card-title font-weight-bold">{{ module.data.city }}</h3>
+    <p class="card-text">
+        <span class="mr-3">{{ module.data.date | format_time("%A") | upper }}</span>
+        {{ module.data.date | format_time("%b %d, %Y")}}
+    </p>
+    <p><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</p>
+    <div class="row mb-3">
+        <div class="col-2"></div>
+        <div class="col-4 align-self-center">
+            <i class="{{ module.data.icon | weather_icon }} weather-icon mr-2"></i>
+        </div>
+        <div class="col-4">
+            <h3 class="mt-3 mb-3">{{ "%2.0f" % module.data.temp_cur }}° C</h3>
+            <p>
+                {{ "%2.0f" % module.data.temp_min }}° C - {{ "%2.0f" % module.data.temp_max }}° C
+            </p>
+            <p>{{ module.data.detailed_status }}</p>
+        </div>
+    </div>
+    <div class="col-2"></div>
+</div>
+<div class="card-footer text-center">
+    <div class="row">
+        {% for fc in module.data.forecasts %}
+        <div class="col-2">
+            <p class="small">{{ fc.date | format_time("%a") | upper }}</p>
+            <p><i class="{{ fc.icon | weather_icon }}"></i></p>
+            <p class="small">
+                {{ "%2.0f" % fc.temp_day }}° C / {{ "%2.0f" % fc.temp_night }}° C
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
