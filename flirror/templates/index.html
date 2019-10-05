@@ -2,8 +2,7 @@
 
 {% block body %}
 <div>
-    <h1 class="text-center">Hello Flirror!</h1>
-    <div class="row text-center text-lg-left">
+    <div class="row p-4">
         {% for module_id, module in modules.items() %}
         <div class="col-6">
             {% include "modules/" + module.type + ".html" ignore missing %}
