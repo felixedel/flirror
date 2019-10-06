@@ -5,7 +5,7 @@ from flirror.crawler.crawlers import Crawler
 from flirror.crawler.scheduling import Scheduler
 
 
-class TestCrawler(Crawler):
+class DummyCrawler(Crawler):
     def __init__(self, interval):
         super().__init__(crawler_id="test", database=None, interval=interval)
 
@@ -16,10 +16,10 @@ class TestCrawler(Crawler):
 
 @mock.patch.object(flirror.crawler.scheduling, "schedule")
 def test_add_job(schedule_mock):
-    crawler_30s = TestCrawler(interval="30s")
-    crawler_5m = TestCrawler(interval="5m")
-    crawler_10m = TestCrawler(interval="10m")
-    crawler_1h = TestCrawler(interval="1h")
+    crawler_30s = DummyCrawler(interval="30s")
+    crawler_5m = DummyCrawler(interval="5m")
+    crawler_10m = DummyCrawler(interval="10m")
+    crawler_1h = DummyCrawler(interval="1h")
 
     scheduler = Scheduler()
     scheduler.add_job(crawler_30s)
