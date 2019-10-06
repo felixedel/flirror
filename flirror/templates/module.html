@@ -1,16 +1,12 @@
-<div class="container">
+<div class="card dark">
     {% if module.error %}
-    <div class="card bg-dark text-white">
-        <p>ERROR: {{ module.error }}</p>
+    <div class="card-body text-center">
+        <h1><i class="fas fa-sad-tear"></i> Error {{ error_code }}</h1>
+        <p class="card-text">
+           {{ module.error }}
+        </p>
     </div>
     {% else %}
-    <div class="meta-header row">
-        <div class="col-12 text-right">
-            <p><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</p>
-        </div>
-    </div>
-    <div class="card bg-dark text-white">
-        {% block body %}{% endblock %}
-    </div>
+    {% block body %}{% endblock %}
     {% endif %}
 </div>

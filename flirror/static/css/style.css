@@ -1,5 +1,7 @@
 body {
     font-family: Roboto,sans-serif;
+    background-color: #121212;
+    color: #ffffff;
 }
 
 .card {
@@ -10,6 +12,21 @@ body {
     border-top: none;
 }
 
+.dark {
+    background-color: #121212;
+}
+
+.primary {
+    background-color: #BB86FC;
+}
+
+/* Weather */
+
 .weather-icon {
     font-size: 5rem;
+}
+
+/* Calendar */
+.badge {
+    border-radius: 0;
 }
