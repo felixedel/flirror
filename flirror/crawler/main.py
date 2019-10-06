@@ -59,8 +59,17 @@ def main(ctx, verbosity):
         ctx.invoke(crawl)
 
 
+@main.command()
+@click.option(
+    "--module", "-m", help="Crawl only the module with the specified ID", multiple=True
+)
+@click.option(
+    "--periodic/--no-periodic",
+    help="Crawl modules periodically (default)",
+    default=False,
+)
 @click.pass_context
-def crawl(ctx):
+def crawl(ctx, module, periodic):
     LOGGER.info("Hello, Flirror!")
 
     config = ctx.obj["config"]
@@ -73,8 +82,15 @@ def crawl(ctx):
     # Create the crawler factory to use for initializing new crawlers
     factory = CrawlerFactory()
 
+    if module:
+        # Filter crawlers for provided module IDs
+        crawler_configs = {m: config.get("MODULES", {}).get(m) for m in module}
+    else:
+        crawler_configs = config.get("MODULES", {})
+
+    crawlers = []
     # Look up crawlers from config file
-    for crawler_id, crawler_config in config.get("MODULES", {}).items():
+    for crawler_id, crawler_config in crawler_configs.items():
         crawler_type = crawler_config.pop("type")
         # TODO Error handling for wrong/missing keys
         LOGGER.info(
@@ -90,13 +106,20 @@ def crawl(ctx):
             )
             continue
         crawler = crawler_cls(crawler_id=crawler_id, database=db, **crawler_config)
+        crawlers.append(crawler)
 
-        # TODO Make scheduling configurable (but use as default)
-        scheduler = Scheduler()
-        scheduler.add_job(crawler)
+    # Do the actual crawling - periodically or not
+    if periodic:
+        for crawler in crawlers:
+            # TODO Make scheduling configurable (but use as default)
+            scheduler = Scheduler()
+            scheduler.add_job(crawler)
 
-    # Finally, start the scheduler
-    scheduler.start()
+        # Finally, start the scheduler
+        scheduler.start()
+    else:
+        for crawler in crawlers:
+            crawler.crawl()
 
 
 if __name__ == "__main__":
