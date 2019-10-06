@@ -1,33 +1,37 @@
 {% extends "module.html" %}
 
 {% block body %}
-{% for item in module.data.events %}
-<div class="row mb-2">
-    <div class="col-3 text-right">
-        <h2 class="font-weight-light">
-            <strong>{{ item.start | format_time("%d") }}</strong>
-        </h2>
-        <h6 class="text-uppercase">{{ item.start | format_time("%b") }}</h6>
+<div class="card-body">
+    <div class="text-right"><small><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</small>
     </div>
-    <div class="col-9 align-self-center">
-        <h6 class="text-uppercase"><strong>{{ item.summary }}</strong></h6>
-        <ul class="list-inline">
-            <li class="list-inline-item">
-                <i class="fa fa-calendar" aria-hidden="true"></i> {{ item.start | format_time("%A") }}
-            </li>
-            {% if item.type == "time" %}
-            <li class="list-inline-item">
-                <i class="fa fa-clock" aria-hidden="true"></i> {{ item.start | format_time("%H:%M") }} -
-                {{ item.end | format_time("%H:%M") }}
-            </li>
-            {% endif %}
-            {% if item.location %}
-            <li class="list-inline-item">
-                <i class="fa fa-location-arrow" aria-hidden="true"></i> Location
-            </li>
-            {% endif %}
-        </ul>
+    {% for item in module.data.events %}
+    <div class="row mb-2">
+        <div class="col-3 text-right">
+            <h2 class="font-weight-light">
+                <strong>{{ item.start | format_time("%d") }}</strong>
+            </h2>
+            <h6 class="text-uppercase">{{ item.start | format_time("%b") }}</h6>
+        </div>
+        <div class="col-9 align-self-center">
+            <h6 class="text-uppercase"><strong>{{ item.summary }}</strong></h6>
+            <ul class="list-inline">
+                <li class="list-inline-item">
+                    <i class="fa fa-calendar" aria-hidden="true"></i> {{ item.start | format_time("%A") }}
+                </li>
+                {% if item.type == "time" %}
+                <li class="list-inline-item">
+                    <i class="fa fa-clock" aria-hidden="true"></i> {{ item.start | format_time("%H:%M") }} -
+                    {{ item.end | format_time("%H:%M") }}
+                </li>
+                {% endif %}
+                {% if item.location %}
+                <li class="list-inline-item">
+                    <i class="fa fa-location-arrow" aria-hidden="true"></i> Location
+                </li>
+                {% endif %}
+            </ul>
+        </div>
     </div>
+    {% endfor %}
 </div>
-{% endfor %}
 {% endblock %}

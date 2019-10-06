@@ -1,5 +1,7 @@
 body {
     font-family: Roboto,sans-serif;
+    background-color: #121212;
+    color: #ffffff;
 }
 
 .card {
@@ -12,4 +14,12 @@ body {
 
 .weather-icon {
     font-size: 5rem;
+}
+
+.dark {
+    background-color: #121212;
+}
+
+.primary {
+    background-color: #BB86FC;
 }
