@@ -12,14 +12,21 @@ body {
     border-top: none;
 }
 
-.weather-icon {
-    font-size: 5rem;
-}
-
 .dark {
     background-color: #121212;
 }
 
 .primary {
     background-color: #BB86FC;
+}
+
+/* Weather */
+
+.weather-icon {
+    font-size: 5rem;
+}
+
+/* Calendar */
+.badge {
+    border-radius: 0;
 }

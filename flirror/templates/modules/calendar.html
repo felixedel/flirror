@@ -2,15 +2,18 @@
 
 {% block body %}
 <div class="card-body">
-    <div class="text-right"><small><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</small>
+    <div class="text-right">
+        <small>
+            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+        </small>
     </div>
     {% for item in module.data.events %}
     <div class="row mb-2">
         <div class="col-3 text-right">
-            <h2 class="font-weight-light">
-                <strong>{{ item.start | format_time("%d") }}</strong>
-            </h2>
-            <h6 class="text-uppercase">{{ item.start | format_time("%b") }}</h6>
+            <h1 class="font-weight-light">
+                <strong class="badge primary">{{ item.start | format_time("%d") }}</strong>
+            </h1>
+            <h5 class="text-uppercase">{{ item.start | format_time("%b") }}</h5>
         </div>
         <div class="col-9 align-self-center">
             <h6 class="text-uppercase"><strong>{{ item.summary }}</strong></h6>
