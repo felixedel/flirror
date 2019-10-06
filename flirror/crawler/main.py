@@ -59,8 +59,12 @@ def main(ctx, verbosity):
         ctx.invoke(crawl)
 
 
+@main.command()
+@click.option(
+    "--module", "-m", help="Crawl only the module with the specified ID", multiple=True
+)
 @click.pass_context
-def crawl(ctx):
+def crawl(ctx, module):
     LOGGER.info("Hello, Flirror!")
 
     config = ctx.obj["config"]
@@ -73,8 +77,14 @@ def crawl(ctx):
     # Create the crawler factory to use for initializing new crawlers
     factory = CrawlerFactory()
 
+    if module:
+        # Filter crawlers for provided module IDs
+        crawler_configs = {m: config.get("MODULES", {}).get(m) for m in module}
+    else:
+        crawler_configs = config.get("MODULES", {})
+
     # Look up crawlers from config file
-    for crawler_id, crawler_config in config.get("MODULES", {}).items():
+    for crawler_id, crawler_config in crawler_configs.items():
         crawler_type = crawler_config.pop("type")
         # TODO Error handling for wrong/missing keys
         LOGGER.info(
