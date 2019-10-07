@@ -280,9 +280,7 @@ class StocksCrawler(Crawler):
                 # inside the dictionary. This makes visualizing the data much simpler.
                 norm_values = []
                 times = []
-                # TODO What to store as labels?
-                labels = []
-                for i, (timeframe, values) in enumerate(data.items(), 1):
+                for timeframe, values in data.items():
                     norm_values.append(
                         {
                             "open": values["1. open"],
@@ -293,17 +291,12 @@ class StocksCrawler(Crawler):
                         }
                     )
                     times.append(timeframe)
-                    labels.append(i)
 
                 stocks_data["stocks"].append(
                     {
                         "symbol": symbol,
                         "alias": alias,
-                        "data": {
-                            "values": norm_values[::-1],
-                            "times": times[::-1],
-                            "labels": labels,
-                        },
+                        "data": {"values": norm_values[::-1], "times": times[::-1]},
                         "meta_data": meta_data,
                     }
                 )
