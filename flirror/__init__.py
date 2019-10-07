@@ -1,6 +1,6 @@
 from flask import Flask
 
-from .api import CalendarApi, WeatherApi
+from .api import CalendarApi, StocksApi, WeatherApi
 from .database import create_database_and_entities
 from .helpers import make_error_handler
 from .utils import format_time, prettydate, weather_icon
@@ -21,6 +21,7 @@ def create_app():
     # The modules API
     WeatherApi.register_url(app)
     CalendarApi.register_url(app)
+    StocksApi.register_url(app)
 
     # The module views (only necessary for debug mode?)
     WeatherView.register_url(app)
