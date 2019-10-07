@@ -21,9 +21,9 @@
             data: {
                 labels: {{ module.data.stocks[0].data.times | safe }},
                 datasets: [{
-                    label: "Volume",
+                    label: "{{ module.data.stocks[0].alias or module.data.stocks[0].symbol }}",
                     data: {{
-                        module.data.stocks[0].data["values"] | list_filter("volume") | safe
+                        module.data.stocks[0].data["values"] | list_filter("close") | safe
                     }},
                     backgroundColor: "rgba(153, 153, 255, 0.2)",
                     borderColor: "rgba(153, 153, 255, 1)",
@@ -32,6 +32,11 @@
                 }]
             },
             options: {
+                legend: {
+                    labels: {
+                        fontColor: "#FFF"
+                    }
+                },
                 scales: {
                     xAxes: [{
                         type: "time",
