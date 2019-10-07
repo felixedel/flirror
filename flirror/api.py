@@ -49,3 +49,21 @@ class CalendarApi(FlirrorMethodView):
         # TODO This should be done before storing the data, but I'm not sure
         # how to tell Pony how to serialize the datetime to JSON
         return data
+
+
+class StocksApi(FlirrorMethodView):
+
+    endpoint = "api-stocks"
+    rule = "/api/stocks"
+    template_name = None
+
+    FLIRROR_OBJECT_KEY = "module_stocks"
+
+    def get(self):
+        data = self.get_stocks()
+        return jsonify(data)
+
+    def get_stocks(self):
+        db = current_app.extensions["database"]
+        data = get_object_by_key(db, self.FLIRROR_OBJECT_KEY)
+        return data

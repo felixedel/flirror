@@ -64,7 +64,7 @@ class IndexView(FlirrorMethodView):
                 error = str(e)
 
             all_data["modules"][module_id] = {
-                "type": module_type,
+                "config": module_config,
                 "data": data,
                 "error": error,
             }

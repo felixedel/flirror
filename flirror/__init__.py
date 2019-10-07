@@ -1,9 +1,9 @@
 from flask import Flask
 
-from .api import CalendarApi, WeatherApi
+from .api import CalendarApi, StocksApi, WeatherApi
 from .database import create_database_and_entities
 from .helpers import make_error_handler
-from .utils import format_time, prettydate, weather_icon
+from .utils import format_time, list_filter, prettydate, weather_icon
 from .views import CalendarView, IndexView, MapView, WeatherView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -21,6 +21,7 @@ def create_app():
     # The modules API
     WeatherApi.register_url(app)
     CalendarApi.register_url(app)
+    StocksApi.register_url(app)
 
     # The module views (only necessary for debug mode?)
     WeatherView.register_url(app)
@@ -37,6 +38,7 @@ def create_app():
     app.add_template_filter(weather_icon)
     app.add_template_filter(prettydate)
     app.add_template_filter(format_time)
+    app.add_template_filter(list_filter)
 
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?

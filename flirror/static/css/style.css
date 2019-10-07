@@ -16,8 +16,24 @@ body {
     background-color: #121212;
 }
 
+.bg-primary {
+    background-color: #BB86FC !important;
+}
+
 .primary {
-    background-color: #BB86FC;
+    color: #BB86FC;
+}
+
+.secondary {
+    color: #FF9;
+}
+
+.third {
+    color: #99F;
+}
+
+.error {
+    color: #E57373;
 }
 
 /* Weather */
@@ -29,4 +45,31 @@ body {
 /* Calendar */
 .badge {
     border-radius: 0;
+}
+
+/* Stocks */
+.chg-up {
+    color: #99F; /* Same as .third */
+}
+
+.chg-up::before {
+    content: "▲";
+
+}
+
+.chg-down {
+    color: #E57373; /* Same as .error */
+}
+
+.chg-down::before {
+    content: "▼";
+}
+
+.chg-up span,
+.chg-down span {
+    padding-left: 3px;
+}
+
+.table > tbody > tr > td {
+    vertical-align: middle;
 }
