@@ -2,7 +2,10 @@
 
 {% block body %}
 <div class="card-body text-center">
-    <div class="text-right"><small><i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}</small>
+    <div class="text-right">
+        <small>
+            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+        </small>
     </div>
     <h3 class="card-title font-weight-bold">{{ module.data.city }}</h3>
     <p class="card-text">

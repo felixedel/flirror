@@ -1,0 +1,43 @@
+{% extends "module.html" %}
+
+{% block body %}
+<div class="card-body">
+    <div class="text-right">
+        <small>
+            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+        </small>
+    </div>
+    {% if module.config.mode == "series" %}
+    <p>Not implemented yet</p>
+    {% else %}
+    {# table is the default mode #}
+    <table class="table table-dark dark">
+        <thead>
+            <tr>
+                {# TODO Look up headers from data structure? #}
+                <th scope="col">SYMBOL</th>
+                <th scope="col">PRICE</th>
+                <th scope="col">PREV. CLOSE</th>
+                <th scope="col">CHG</th>
+                <th scope="col">CHG%</th>
+                <th scope="col">VOLUME</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in module.data.stocks %}
+            <tr>
+                <th scope="row">{{ entry.alias or entry.symbol }}</th>
+                <td class="secondary">{{ entry.data["05. price"] }}</td>
+                <td>{{ entry.data["08. previous close"] }}</td>
+                {% set change = entry.data["09. change"] %}
+                {% set change_percent = entry.data["10. change percent"] %}
+                <td class="{% if change | float > 0 %}chg-up{% else %}chg-down{% endif %}"><span>{{ change }}</span></td>
+                <td class="{% if change | float > 0 %}chg-up{% else %}chg-down{% endif %}">{{ change_percent }}</td>
+                <td>{{ entry.data["06. volume"] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endblock %}
