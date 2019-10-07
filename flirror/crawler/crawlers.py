@@ -240,10 +240,13 @@ class StocksCrawler(Crawler):
 
     FLIRROR_OBJECT_KEY = "module_stocks"
 
-    def __init__(self, crawler_id, database, api_key, symbols, interval=None):
+    def __init__(
+        self, crawler_id, database, api_key, symbols, mode="table", interval=None
+    ):
         super().__init__(crawler_id, database, interval)
         self.api_key = api_key
         self.symbols = symbols
+        self.mode = mode
 
     def crawl(self):
         ts = TimeSeries(key="YOUR_API_KEY")
@@ -251,19 +254,32 @@ class StocksCrawler(Crawler):
 
         # Get the data from the alpha vantage API
         for symbol, alias in self.symbols:
-            LOGGER.info(
-                "Requesting intraday for symbol '%s' with alias '%s'", symbol, alias
-            )
-            data, meta_data = ts.get_intraday(symbol)
+            if self.mode == "table":
+                LOGGER.info(
+                    "Requesting global quote for symbol '%s' with alias '%s'", symbol, alias
+                )
+                data = ts.get_quote_endpoint(symbol)
+                print(data)
+                stocks_data["stocks"].append(
+                    # TODO It looks like alpha_vantage returns a list with the data
+                    # at first element and a second element which is always None
+                    # TODO Normalize the data and get rid of all those 1., 2., 3. in
+                    # the dictionary keys
+                    {"symbol": symbol, "alias": alias, "data": data[0]}
+                )
+            else:
+                pass
+                """
+                LOGGER.info(
+                    "Requesting intraday for symbol '%s' with alias '%s'", symbol, alias
+                )
+                data, meta_data = ts.get_intraday(symbol)
+                """
+                # TODO Use meta_data to calculate correct timezone information
+                # {'1. Information': 'Intraday (15min) open, high, low, close prices and volume',
+                # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
+                # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
 
-            # TODO Use meta_data to calculate correct timezone information
-            # {'1. Information': 'Intraday (15min) open, high, low, close prices and volume',
-            # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
-            # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
-
-            stocks_data["stocks"].append(
-                {"symbol": symbol, "alias": alias, "data": data, "meta_data": meta_data}
-            )
 
         store_object_by_key(
             self.database, key=self.FLIRROR_OBJECT_KEY, value=stocks_data
