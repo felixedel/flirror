@@ -256,7 +256,9 @@ class StocksCrawler(Crawler):
         for symbol, alias in self.symbols:
             if self.mode == "table":
                 LOGGER.info(
-                    "Requesting global quote for symbol '%s' with alias '%s'", symbol, alias
+                    "Requesting global quote for symbol '%s' with alias '%s'",
+                    symbol,
+                    alias,
                 )
                 data = ts.get_quote_endpoint(symbol)
                 print(data)
@@ -268,18 +270,47 @@ class StocksCrawler(Crawler):
                     {"symbol": symbol, "alias": alias, "data": data[0]}
                 )
             else:
-                pass
-                """
                 LOGGER.info(
                     "Requesting intraday for symbol '%s' with alias '%s'", symbol, alias
                 )
                 data, meta_data = ts.get_intraday(symbol)
-                """
+
+                # As the dictionary is already "sorted" by the time in chronologial (desc) order,
+                # we could simply reformat it into a list and move the time frame as a value
+                # inside the dictionary. This makes visualizing the data much simpler.
+                norm_values = []
+                times = []
+                # TODO What to store as labels?
+                labels = []
+                for i, (timeframe, values) in enumerate(data.items(), 1):
+                    norm_values.append(
+                        {
+                            "open": values["1. open"],
+                            "high": values["2. high"],
+                            "low": values["3. low"],
+                            "close": values["4. close"],
+                            "volume": values["5. volume"],
+                        }
+                    )
+                    times.append(timeframe)
+                    labels.append(i)
+
+                stocks_data["stocks"].append(
+                    {
+                        "symbol": symbol,
+                        "alias": alias,
+                        "data": {
+                            "values": norm_values[::-1],
+                            "times": times[::-1],
+                            "labels": labels,
+                        },
+                        "meta_data": meta_data,
+                    }
+                )
                 # TODO Use meta_data to calculate correct timezone information
                 # {'1. Information': 'Intraday (15min) open, high, low, close prices and volume',
                 # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
                 # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
-
 
         store_object_by_key(
             self.database, key=self.FLIRROR_OBJECT_KEY, value=stocks_data

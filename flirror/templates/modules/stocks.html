@@ -8,7 +8,30 @@
         </small>
     </div>
     {% if module.config.mode == "series" %}
-    <p>Not implemented yet</p>
+    <canvas id="chart-{{ module_id }}" width="400" height="400"></canvas>
+    {# For whatever reason, we must include the Chart.js file directly before the script that is using it #}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"
+        integrity="sha256-Uv9BNBucvCPipKQ2NS9wYpJmi8DTOEfTA/nH2aoJALw=" crossorigin="anonymous">
+        </script>
+    <script>
+        var ctx = document.getElementById("chart-{{ module_id }}").getContext("2d");
+        var myChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: {{ module.data.stocks[0].data.times | safe }},
+                datasets: [{
+                    label: "Volume",
+                    data: {{
+                        module.data.stocks[0].data["values"] | list_filter("volume") | safe
+                    }},
+                    backgroundColor: "rgba(153, 153, 255, 0.2)",
+                    borderColor: "rgba(153, 153, 255, 1)",
+                    borderWidth: 1
+                }]
+            },
+            options: {}
+        });
+    </script>
     {% else %}
     {# table is the default mode #}
     <table class="table table-dark dark">
@@ -31,7 +54,8 @@
                 <td>{{ entry.data["08. previous close"] }}</td>
                 {% set change = entry.data["09. change"] %}
                 {% set change_percent = entry.data["10. change percent"] %}
-                <td class="{% if change | float > 0 %}chg-up{% else %}chg-down{% endif %}"><span>{{ change }}</span></td>
+                <td class="{% if change | float > 0 %}chg-up{% else %}chg-down{% endif %}"><span>{{ change }}</span>
+                </td>
                 <td class="{% if change | float > 0 %}chg-up{% else %}chg-down{% endif %}">{{ change_percent }}</td>
                 <td>{{ entry.data["06. volume"] }}</td>
             </tr>

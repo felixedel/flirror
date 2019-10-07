@@ -69,3 +69,7 @@ def parse_interval_string(interval_string):
 def format_time(timestamp, format):
     date = datetime.utcfromtimestamp(timestamp)
     return date.strftime(format)
+
+
+def list_filter(list_of_dicts_to_filter, key):
+    return [d[key] for d in list_of_dicts_to_filter]
