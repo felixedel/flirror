@@ -9,10 +9,11 @@
     </div>
     {% if module.config.mode == "series" %}
     <canvas id="chart-{{ module_id }}" width="400" height="400"></canvas>
-    {# For whatever reason, we must include the Chart.js file directly before the script that is using it #}
+    {# NOTE: Moment.js must be included before Chart.js to make the time axis work #}
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"
         integrity="sha256-Uv9BNBucvCPipKQ2NS9wYpJmi8DTOEfTA/nH2aoJALw=" crossorigin="anonymous">
-        </script>
+    </script>
     <script>
         var ctx = document.getElementById("chart-{{ module_id }}").getContext("2d");
         var myChart = new Chart(ctx, {
@@ -26,10 +27,28 @@
                     }},
                     backgroundColor: "rgba(153, 153, 255, 0.2)",
                     borderColor: "rgba(153, 153, 255, 1)",
-                    borderWidth: 1
+                    borderWidth: 1,
+                    pointRadius: 0
                 }]
             },
-            options: {}
+            options: {
+                scales: {
+                    xAxes: [{
+                        type: "time",
+                        distribution: "series",
+                        time: {
+                            unit: "hour",
+                            displayFormats: {
+                                hour: 'MMM DD h:mm'
+                            }
+                        },
+                        ticks: {
+                            source: "data",
+                            autoSkip: true
+                        }
+                    }]
+                }
+            }
         });
     </script>
     {% else %}
