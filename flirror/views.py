@@ -51,17 +51,26 @@ class IndexView(FlirrorMethodView):
             module_type = module_config.get("type")
             # TODO Error handling for wrong/missing keys
 
+            data = None
             error = None
             try:
-                res = requests.get(url_for(f"api-{module_type}", _external=True))
+                res = requests.get(
+                    url_for(f"api-{module_type}", _external=True),
+                    params={"module_id": module_id},
+                )
                 # TODO Error handling?
                 # Add the error message as module data, so it could be displayed with
                 # a general module-error template that can be included in the module.html
                 # in case this error field is set.
-                res.raise_for_status
                 data = res.json()
-            except werkzeug.routing.BuildError as e:
-                error = str(e)
+                res.raise_for_status()
+            except (werkzeug.routing.BuildError, requests.exceptions.HTTPError) as e:
+                msg = str(e)
+                # If we got a better message from the e.g. JSON API, we use it instead
+                if data is not None and "error" in data:
+                    msg = data["msg"]
+
+                error = {"code": res.status_code, "msg": msg}
 
             all_data["modules"][module_id] = {
                 "config": module_config,
