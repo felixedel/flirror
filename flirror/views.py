@@ -54,7 +54,10 @@ class IndexView(FlirrorMethodView):
             data = None
             error = None
             try:
-                res = requests.get(url_for(f"api-{module_type}", _external=True))
+                res = requests.get(
+                    url_for(f"api-{module_type}", _external=True),
+                    params={"module_id": module_id},
+                )
                 # TODO Error handling?
                 # Add the error message as module data, so it could be displayed with
                 # a general module-error template that can be included in the module.html
