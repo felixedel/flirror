@@ -5,7 +5,7 @@
     <div class="row">
         {% for module_id, module in modules.items() %}
         <div class="col-6">
-            {% include "modules/" + module.config.type + ".html" ignore missing %}
+            {% include "modules/" + module.type + ".html" ignore missing %}
         </div>
         {% endfor %}
     </div>

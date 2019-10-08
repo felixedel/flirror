@@ -47,7 +47,10 @@ class IndexView(FlirrorMethodView):
         # Here we have place for overall meta data (like flirror version or so)
         all_data = {"modules": {}}
 
-        for module_id, module_config in current_app.config.get("MODULES", {}).items():
+        config_modules = current_app.config.get("MODULES", [])
+
+        for module_config in config_modules:
+            module_id = module_config.get("id")
             module_type = module_config.get("type")
             # TODO Error handling for wrong/missing keys
 
@@ -73,12 +76,12 @@ class IndexView(FlirrorMethodView):
                 error = {"code": res.status_code, "msg": msg}
 
             all_data["modules"][module_id] = {
-                "config": module_config,
+                "type": module_type,
+                "config": module_config["config"],
                 "data": data,
                 "error": error,
             }
 
-        print(all_data)
         context = self.get_context(**all_data)
         return render_template(self.template_name, **context)
 
