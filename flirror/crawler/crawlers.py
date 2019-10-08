@@ -24,6 +24,10 @@ class Crawler:
         self.database = database
         self.interval = interval
 
+    @property
+    def object_key(self):
+        return f"{self.FLIRROR_OBJECT_KEY}-{self.id}"
+
 
 class WeatherCrawler(Crawler):
 
@@ -64,9 +68,7 @@ class WeatherCrawler(Crawler):
         # Store the crawl timestamp
         weather_data["_timestamp"] = now
 
-        store_object_by_key(
-            self.database, key=self.FLIRROR_OBJECT_KEY, value=weather_data
-        )
+        store_object_by_key(self.database, key=self.object_key, value=weather_data)
 
     @property
     def owm(self):
@@ -203,9 +205,7 @@ class CalendarCrawler(Crawler):
         all_events = sorted(all_events, key=lambda k: k["start"])
 
         event_data = {"_timestamp": now, "events": all_events[: self.max_items]}
-        store_object_by_key(
-            self.database, key=self.FLIRROR_OBJECT_KEY, value=event_data
-        )
+        store_object_by_key(self.database, key=self.object_key, value=event_data)
 
     @staticmethod
     def _parse_event_data(event):
@@ -305,9 +305,7 @@ class StocksCrawler(Crawler):
                 # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
                 # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
 
-        store_object_by_key(
-            self.database, key=self.FLIRROR_OBJECT_KEY, value=stocks_data
-        )
+        store_object_by_key(self.database, key=self.object_key, value=stocks_data)
 
 
 class CrawlerFactory:
