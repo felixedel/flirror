@@ -45,8 +45,9 @@ class IndexView(FlirrorMethodView):
 
     def get(self):
 
-        # Here we have place for overall meta data (like flirror version or so)
-        all_data = {"modules": {}}
+        # The dictionary holding all necessary context data for the index template
+        # Here we have also place for overall meta data (like flirror version or so)
+        ctx_data = {"modules": defaultdict(list)}
 
         # Group modules by position and sort positions in asc order
         config_modules = current_app.config.get("MODULES", [])
@@ -74,7 +75,10 @@ class IndexView(FlirrorMethodView):
                     )
                     data = res.json()
                     res.raise_for_status()
-                except (werkzeug.routing.BuildError, requests.exceptions.HTTPError) as e:
+                except (
+                    werkzeug.routing.BuildError,
+                    requests.exceptions.HTTPError,
+                ) as e:
                     msg = str(e)
                     # If we got a better message from the e.g. JSON API, we use it instead
                     if data is not None and "error" in data:
@@ -82,14 +86,17 @@ class IndexView(FlirrorMethodView):
 
                     error = {"code": res.status_code, "msg": msg}
 
-                all_data["modules"][module_id] = {
-                    "type": module_type,
-                    "config": module_config["config"],
-                    "data": data,
-                    "error": error,
-                }
+                ctx_data["modules"][position].append(
+                    {
+                        "type": module_type,
+                        "id": module_id,
+                        "config": module_config["config"],
+                        "data": data,
+                        "error": error,
+                    }
+                )
 
-        context = self.get_context(**all_data)
+        context = self.get_context(**ctx_data)
         return render_template(self.template_name, **context)
 
 
