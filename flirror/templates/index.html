@@ -7,7 +7,7 @@
             {# Check if we have more than one module for this position,
             and if so use a carousel to show all in one place #}
             {% if modules | length > 1 %}
-            <div class="col-6">
+            <div class="col-6 d-flex align-items-stretch">
                 <div id="carousel-{{ position }}" class="carousel slide" data-ride="carousel">
                     <ol class="carousel-indicators">
                         {% for module in modules %}
