@@ -18,7 +18,7 @@
                     </ol>
                     <div class="carousel-inner">
                         {% for module in modules %}
-                        <div class="carousel-item {% if loop.first %}active{% endif %}" data-interval="5000">
+                        <div class="carousel-item {% if loop.first %}active{% endif %}" data-interval="{{ module.display.get('time', 5000) }}">
                             {% include "modules/" + module.type + ".html" ignore missing %}
                         </div>
                         {% endfor %}

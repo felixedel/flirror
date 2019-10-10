@@ -49,18 +49,15 @@ class IndexView(FlirrorMethodView):
         # Here we have also place for overall meta data (like flirror version or so)
         ctx_data = {"modules": defaultdict(list)}
 
-        # Group modules by position and sort positions in asc order
         config_modules = current_app.config.get("MODULES", [])
 
+        # Group modules by position and sort positions in asc order
         pos_modules = defaultdict(list)
         for module in config_modules:
-            pos_modules[module["position"]].append(module)
-
+            pos_modules[module["display"]["position"]].append(module)
         sort_pos_modules = OrderedDict(sorted(pos_modules.items()))
 
         for position, module_configs in sort_pos_modules.items():
-            # TODO Check if the actual positions contains more than a single element
-            # and if so, use a carousel/slide with each module
             for module_config in module_configs:
                 module_id = module_config.get("id")
                 module_type = module_config.get("type")
@@ -91,6 +88,7 @@ class IndexView(FlirrorMethodView):
                         "type": module_type,
                         "id": module_id,
                         "config": module_config["config"],
+                        "display": module_config["display"],
                         "data": data,
                         "error": error,
                     }
