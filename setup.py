@@ -9,6 +9,7 @@ requires = [
     "alpha_vantage",
     "arrow",
     "click",
+    "feedparser",
     "flask",
     "google-api-python-client",
     "google-auth-httplib2",

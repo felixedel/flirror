@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 
 import arrow
+import feedparser
 import googleapiclient.discovery
 from alpha_vantage.timeseries import TimeSeries
 from google.auth.exceptions import RefreshError
@@ -236,6 +237,39 @@ class CalendarCrawler(Crawler):
         )
 
 
+class NewsfeedCrawler(Crawler):
+
+    FLIRROR_OBJECT_KEY = "module_newsfeed"
+
+    def __init__(self, crawler_id, database, url, name, interval=None):
+        super().__init__(crawler_id, database, interval)
+        self.url = url
+        self.name = name
+
+    def crawl(self):
+        LOGGER.info("Requesting news feed '%s' from '%s'", self.name, self.url)
+
+        news_data = {"_timestamp": time.time(), "news": []}
+
+        feed = feedparser.parse(self.url)
+        for entry in feed.entries:
+            news_data["news"].append(
+                {
+                    # TODO Remove when not needed any longer. Currently, it's helpful
+                    # to understand the common attributes and see the differences
+                    # between various RSS feeds.
+                    "_raw": entry,
+                    "title": entry.title,
+                    "summary": entry.summary,
+                    "link": entry.id,
+                    # TODO tzinfo?
+                    "published": datetime(*entry.updated_parsed[:7]).timestamp(),
+                }
+            )
+
+        store_object_by_key(self.database, self.object_key, news_data)
+
+
 class StocksCrawler(Crawler):
 
     FLIRROR_OBJECT_KEY = "module_stocks"
@@ -312,6 +346,7 @@ class CrawlerFactory:
     CRAWLERS = {
         "weather": WeatherCrawler,
         "calendar": CalendarCrawler,
+        "newsfeed": NewsfeedCrawler,
         "stocks": StocksCrawler,
     }
 
