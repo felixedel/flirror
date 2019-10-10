@@ -3,10 +3,35 @@
 {% block body %}
 <div class="pt-4">
     <div class="row">
-        {% for module_id, module in modules.items() %}
-        <div class="col-6">
-            {% include "modules/" + module.config.type + ".html" ignore missing %}
-        </div>
+        {% for position, modules in modules.items() %}
+            {# Check if we have more than one module for this position,
+            and if so use a carousel to show all in one place #}
+            {% if modules | length > 1 %}
+            <div class="col-6 d-flex align-items-stretch">
+                <div id="carousel-{{ position }}" class="carousel slide" data-ride="carousel">
+                    <ol class="carousel-indicators">
+                        {% for module in modules %}
+                        <li data-target="#carousel-{{ position }}" data-slide-to="{{ loop.index }}"
+                            class="{% if loop.first %}active{% endif %}">
+                        </li>
+                        {% endfor %}
+                    </ol>
+                    <div class="carousel-inner">
+                        {% for module in modules %}
+                        <div class="carousel-item {% if loop.first %}active{% endif %}" data-interval="{{ module.display.get('time', 5000) }}">
+                            {% include "modules/" + module.type + ".html" ignore missing %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+                {% for module in modules %}
+                <div class="col-6">
+                    {% include "modules/" + module.type + ".html" ignore missing %}
+                </div>
+                {% endfor %}
+            {% endif %}
         {% endfor %}
     </div>
 </div>

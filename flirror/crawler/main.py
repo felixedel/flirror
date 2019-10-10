@@ -82,16 +82,18 @@ def crawl(ctx, module, periodic):
     # Create the crawler factory to use for initializing new crawlers
     factory = CrawlerFactory()
 
+    config_modules = config.get("MODULES", [])
     if module:
         # Filter crawlers for provided module IDs
-        crawler_configs = {m: config.get("MODULES", {}).get(m) for m in module}
+        crawler_configs = [m for m in config_modules if m["id"] in module]
     else:
-        crawler_configs = config.get("MODULES", {})
+        crawler_configs = config_modules
 
     crawlers = []
     # Look up crawlers from config file
-    for crawler_id, crawler_config in crawler_configs.items():
-        crawler_type = crawler_config.pop("type")
+    for crawler_config in crawler_configs:
+        crawler_id = crawler_config.get("id")
+        crawler_type = crawler_config.get("type")
         # TODO Error handling for wrong/missing keys
         LOGGER.info(
             "Initializing crawler of type '%s' with id '%s'", crawler_type, crawler_id
@@ -105,7 +107,13 @@ def crawl(ctx, module, periodic):
                 "Could not initialize crawler '%s'. Skipping this crawler.", crawler_id
             )
             continue
-        crawler = crawler_cls(crawler_id=crawler_id, database=db, **crawler_config)
+        interval = crawler_config.get("crawler", {}).get("interval")
+        crawler = crawler_cls(
+            crawler_id=crawler_id,
+            database=db,
+            **crawler_config["config"],
+            interval=interval
+        )
         crawlers.append(crawler)
 
     # Do the actual crawling - periodically or not

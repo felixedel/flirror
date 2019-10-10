@@ -1,4 +1,5 @@
 import abc
+from collections import defaultdict, OrderedDict
 
 import requests
 import werkzeug
@@ -44,42 +45,56 @@ class IndexView(FlirrorMethodView):
 
     def get(self):
 
-        # Here we have place for overall meta data (like flirror version or so)
-        all_data = {"modules": {}}
+        # The dictionary holding all necessary context data for the index template
+        # Here we have also place for overall meta data (like flirror version or so)
+        ctx_data = {"modules": defaultdict(list)}
 
-        for module_id, module_config in current_app.config.get("MODULES", {}).items():
-            module_type = module_config.get("type")
-            # TODO Error handling for wrong/missing keys
+        config_modules = current_app.config.get("MODULES", [])
 
-            data = None
-            error = None
-            try:
-                res = requests.get(
-                    url_for(f"api-{module_type}", _external=True),
-                    params={"module_id": module_id},
+        # Group modules by position and sort positions in asc order
+        pos_modules = defaultdict(list)
+        for module in config_modules:
+            pos_modules[module["display"]["position"]].append(module)
+        sort_pos_modules = OrderedDict(sorted(pos_modules.items()))
+
+        for position, module_configs in sort_pos_modules.items():
+            for module_config in module_configs:
+                module_id = module_config.get("id")
+                module_type = module_config.get("type")
+                # TODO Error handling for wrong/missing keys
+
+                data = None
+                error = None
+                try:
+                    res = requests.get(
+                        url_for(f"api-{module_type}", _external=True),
+                        params={"module_id": module_id},
+                    )
+                    data = res.json()
+                    res.raise_for_status()
+                except (
+                    werkzeug.routing.BuildError,
+                    requests.exceptions.HTTPError,
+                ) as e:
+                    msg = str(e)
+                    # If we got a better message from the e.g. JSON API, we use it instead
+                    if data is not None and "error" in data:
+                        msg = data["msg"]
+
+                    error = {"code": res.status_code, "msg": msg}
+
+                ctx_data["modules"][position].append(
+                    {
+                        "type": module_type,
+                        "id": module_id,
+                        "config": module_config["config"],
+                        "display": module_config["display"],
+                        "data": data,
+                        "error": error,
+                    }
                 )
-                # TODO Error handling?
-                # Add the error message as module data, so it could be displayed with
-                # a general module-error template that can be included in the module.html
-                # in case this error field is set.
-                data = res.json()
-                res.raise_for_status()
-            except (werkzeug.routing.BuildError, requests.exceptions.HTTPError) as e:
-                msg = str(e)
-                # If we got a better message from the e.g. JSON API, we use it instead
-                if data is not None and "error" in data:
-                    msg = data["msg"]
 
-                error = {"code": res.status_code, "msg": msg}
-
-            all_data["modules"][module_id] = {
-                "config": module_config,
-                "data": data,
-                "error": error,
-            }
-
-        print(all_data)
-        context = self.get_context(**all_data)
+        context = self.get_context(**ctx_data)
         return render_template(self.template_name, **context)
 
 
