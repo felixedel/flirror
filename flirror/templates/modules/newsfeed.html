@@ -1,0 +1,23 @@
+{% extends "module.html" %}
+
+{% block body %}
+<div class="card-body">
+    <div class="text-right">
+        <small>
+            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+        </small>
+    </div>
+    {% set entry = module.data.news[0] %}
+
+    <div class="text-center">
+        <h5 class="text-muted font-weight-light">{{ module.config.name }}, {{ entry.published | prettydate }}</h5>
+        <h4 class="font-weight-light">{{ entry.title }}</h4>
+    </div>
+    {% if module.display.summary %}
+    <div class="text-justify">
+        <p>{{ entry.summary }}</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
