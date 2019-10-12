@@ -63,6 +63,7 @@ class IndexView(FlirrorMethodView):
                 module_type = module_config.get("type")
                 # TODO Error handling for wrong/missing keys
 
+                res = None
                 data = None
                 error = None
                 try:
@@ -81,7 +82,10 @@ class IndexView(FlirrorMethodView):
                     if data is not None and "error" in data:
                         msg = data["msg"]
 
-                    error = {"code": res.status_code, "msg": msg}
+                    code = 500  # TODO Dump default
+                    if res is not None:
+                        code = res.status_code
+                    error = {"code": code, "msg": msg}
 
                 ctx_data["modules"][position].append(
                     {
