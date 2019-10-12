@@ -76,6 +76,29 @@ class CalendarApi(FlirrorMethodView):
         return data
 
 
+class NewsfeedApi(FlirrorMethodView):
+
+    endpoint = "api-newsfeed"
+    rule = "/api/newsfeed"
+    template_name = None
+
+    FLIRROR_OBJECT_KEY = "module_newsfeed"
+
+    def get(self):
+        module_id = request.args.get("module_id")
+        db = current_app.extensions["database"]
+        data = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{module_id}")
+
+        if data is None:
+            json_abort(
+                400,
+                f"Could not find calendar data for module with ID '{module_id}'. "
+                "Did the appropriate crawler run?",
+            )
+
+        return data
+
+
 class StocksApi(FlirrorMethodView):
 
     endpoint = "api-stocks"

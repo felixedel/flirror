@@ -27,7 +27,7 @@
             </div>
             {% else %}
                 {% for module in modules %}
-                <div class="col-6">
+                <div class="col-6 align-items-stretch">
                     {% include "modules/" + module.type + ".html" ignore missing %}
                 </div>
                 {% endfor %}

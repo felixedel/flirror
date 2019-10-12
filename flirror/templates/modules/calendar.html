@@ -10,9 +10,9 @@
     {% for item in module.data.events %}
     <div class="row mb-2">
         <div class="col-3 text-right">
-            <h1 class="font-weight-light">
+            <h2>
                 <strong class="badge bg-primary">{{ item.start | format_time("%d") }}</strong>
-            </h1>
+            </h2>
             <h5 class="text-uppercase">{{ item.start | format_time("%b") }}</h5>
         </div>
         <div class="col-9 align-self-center">

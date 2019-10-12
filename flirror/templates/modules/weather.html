@@ -7,7 +7,7 @@
             <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
         </small>
     </div>
-    <h3 class="card-title font-weight-bold">{{ module.data.city }}</h3>
+    <h3><strong>{{ module.data.city }}</strong></h3>
     <p class="card-text">
         <span class="mr-3">{{ module.data.date | format_time("%A") | upper }}</span>
         {{ module.data.date | format_time("%b %d, %Y")}}
@@ -18,7 +18,7 @@
             <i class="{{ module.data.icon | weather_icon }} weather-icon mr-2 primary"></i>
         </div>
         <div class="col-4">
-            <h3 class="mt-3 mb-3">{{ "%2.0f" % module.data.temp_cur }}° C</h3>
+            <h3 class="mt-3 mb-3"><strong>{{ "%2.0f" % module.data.temp_cur }}° C</strong></h3>
             <p>
                 {{ "%2.0f" % module.data.temp_min }}° C - {{ "%2.0f" % module.data.temp_max }}° C
             </p>
