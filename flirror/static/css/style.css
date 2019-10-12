@@ -1,8 +1,37 @@
 /* General */
 body {
     font-family: Roboto,sans-serif;
+    font-weight: 300 !important;
+    line-height: 1.5em;
     background-color: #121212;
     color: #ffffff;
+}
+
+h1 {
+    font-size: 3.3125rem !important;
+    line-height: 1.15em !important;
+}
+
+h2 {
+    font-size: 2.25rem !important;
+}
+
+h3 {
+    font-size: 1.5625rem !important;
+    font-weight: 300 !important;
+    line-height: 1.4em !important;
+}
+
+h4 {
+    font-size: 1.15rem !important;
+    font-weight: 300 !important;
+    line-height: 1.4em !important;
+}
+
+h5 {
+    font-size: 1.0625rem !important;
+    font-weight: 300 !important;
+    font-weight: 300 !important;
 }
 
 .card {
@@ -35,6 +64,21 @@ body {
 
 .error {
     color: #E57373;
+}
+
+.high-emphasis {
+    color: #FFF;
+    opacity: .87;
+}
+
+.medium-emphasis {
+    color: #FFF;
+    opacity: .6;
+}
+
+.disabled {
+    color: #FFF;
+    opacity: .38;
 }
 
 /* Carousel */

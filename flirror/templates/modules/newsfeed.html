@@ -10,8 +10,8 @@
     {% set entry = module.data.news[0] %}
 
     <div class="text-center">
-        <h5 class="text-muted font-weight-light">{{ module.config.name }}, {{ entry.published | prettydate }}</h5>
-        <h4 class="font-weight-light">{{ entry.title }}</h4>
+        <h4 class="medium-emphasis">{{ module.config.name }}, {{ entry.published | prettydate }}</h5>
+        <h3>{{ entry.title }}</h4>
     </div>
     {% if module.display.summary %}
     <div class="text-justify">
