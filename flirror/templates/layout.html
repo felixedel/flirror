@@ -8,6 +8,9 @@
         <!-- custom css -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/weather-icons-2.0.10.min.css') }}">
+        {% assets "scss_all" %}
+        <link rel=stylesheet type=text/css href="{{ ASSET_URL }}">
+        {% endassets %}
         <title>Flirror</title>
     </head>
     <body>

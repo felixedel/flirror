@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_assets import Bundle, Environment
 
 from .api import CalendarApi, NewsfeedApi, StocksApi, WeatherApi
 from .database import create_database_and_entities
@@ -40,6 +41,11 @@ def create_app():
     app.add_template_filter(prettydate)
     app.add_template_filter(format_time)
     app.add_template_filter(list_filter)
+
+    # Initialize webassets to work with SCSS files
+    assets = Environment(app)
+    scss = Bundle("scss/all.scss", filters="pyscss", output="all.css")
+    assets.register("scss_all", scss)
 
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?
