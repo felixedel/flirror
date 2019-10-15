@@ -1,4 +1,6 @@
 <div class="card-body">
+    {% if module.config.mode == "analog" %}
+    {# Analog clock UI #}
     <div class="clock-container">
         <h4 class="clock-date pb-2"></h4>
         <div class="clock">
@@ -11,11 +13,24 @@
             {% endfor %}
         </div>
     </div>
+    {% else %}
+    {# Digital clock UI #}
+    <div class="text-center">
+        <h4 class="clock-date medium-emphasis pb-2"></h4>
+        <h1 class="font-weight-light">
+            <span class="clock-time"></span>
+            <small class="font-weight-light">
+                <sup class="clock-seconds disabled"></sup>
+            </small>
+        </h1>
+    </div>
+    {% endif %}
 </div>
+{% if module.config.mode == "analog" %}
+{# Analog clock script #}
 <script>
     // Javascript is used to set the clock to the current computer time.
-    var now = new Date();
-    var currentSec = getSecondsToday(now);
+    var currentSec = getSecondsToday();
 
     var seconds = (currentSec / 60) % 1;
     var minutes = (currentSec / 3600) % 1;
@@ -25,13 +40,12 @@
     setTime(3600 * minutes, "minute");
     setTime(43200 * hours, "hour");
 
-    setDate(now);
-
     function setTime(left, hand) {
         $(".clock__" + hand).css("animation-delay", "" + left * -1 + "s");
     }
 
-    function getSecondsToday(now) {
+    function getSecondsToday() {
+        let now = new Date();
 
         let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -39,7 +53,43 @@
         return Math.round(diff / 1000);
     }
 
-    function setDate(now) {
+</script>
+{% else %}
+{# Digital clock script #}
+<script>
+    // Add a String and Number functions to prefix a number with a leading zero
+    String.prototype.lpad = function (padString, length) {
+        var str = this;
+        while (str.length < length)
+            str = padString + str;
+        return str;
+    }
+
+    Number.prototype.lpadZero = function () {
+        return String(this).lpad("0", 2);
+    }
+
+    function setTime() {
+        var now = new Date();
+
+        timeString = now.getHours().lpadZero() + ":" + now.getMinutes().lpadZero();
+        $(".clock-time").text(timeString);
+
+        $(".clock-seconds").text(now.getSeconds().lpadZero());
+    }
+
+    // Update the time every second
+    setInterval(setTime, 1000);
+
+</script>
+{% endif %}
+
+<script>
+    setDate();
+
+    function setDate() {
+        let now = new Date();
+
         var weekdays = [
             "Sunday",
             "Monday",
@@ -63,10 +113,11 @@
             "October",
             "November"
         ]
+
         result = weekdays[now.getDay()] + ", " +
-                 month[now.getMonth()] + " " +
-                 now.getDate() + ", " +
-                 now.getFullYear();
+            month[now.getMonth()] + " " +
+            now.getDate() + ", " +
+            now.getFullYear();
         $(".clock-date").text(result);
     }
 </script>
