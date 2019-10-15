@@ -1,5 +1,6 @@
 <div class="card-body">
     <div class="clock-container">
+        <h4 class="clock-date pb-2"></h4>
         <div class="clock">
             <div class="clock__second"></div>
             <div class="clock__minute"></div>
@@ -13,7 +14,8 @@
 </div>
 <script>
     // Javascript is used to set the clock to the current computer time.
-    var currentSec = getSecondsToday();
+    var now = new Date();
+    var currentSec = getSecondsToday(now);
 
     var seconds = (currentSec / 60) % 1;
     var minutes = (currentSec / 3600) % 1;
@@ -23,16 +25,48 @@
     setTime(3600 * minutes, "minute");
     setTime(43200 * hours, "hour");
 
+    setDate(now);
+
     function setTime(left, hand) {
         $(".clock__" + hand).css("animation-delay", "" + left * -1 + "s");
     }
 
-    function getSecondsToday() {
-        let now = new Date();
+    function getSecondsToday(now) {
 
         let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
         let diff = now - today;
         return Math.round(diff / 1000);
+    }
+
+    function setDate(now) {
+        var weekdays = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+        ]
+
+        var month = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November"
+        ]
+        result = weekdays[now.getDay()] + ", " +
+                 month[now.getMonth()] + " " +
+                 now.getDate() + ", " +
+                 now.getFullYear();
+        $(".clock-date").text(result);
     }
 </script>
