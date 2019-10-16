@@ -20,7 +20,8 @@
       background: #f4eed7;
       transform-origin: bottom center;
       z-index: 2;
-      border-radius: 1px; }
+      border-radius: 1px;
+      box-sizing: unset; }
       .clock__second {
         height: 90px;
         margin-top: 10px;

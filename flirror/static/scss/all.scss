@@ -35,6 +35,9 @@ $feature : #4b9aaa;
     transform-origin: bottom center;
     z-index: 2;
     border-radius: 1px;
+    /* overwrite bootstrap's border box property. Otherwise the clock is not
+    100% round and the indicators are not properly positioned */
+    box-sizing: unset;
   }
 
   &__second {
