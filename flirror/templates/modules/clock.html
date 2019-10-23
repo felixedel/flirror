@@ -57,25 +57,10 @@
 {% else %}
 {# Digital clock script #}
 <script>
-    // Add a String and Number functions to prefix a number with a leading zero
-    String.prototype.lpad = function (padString, length) {
-        var str = this;
-        while (str.length < length)
-            str = padString + str;
-        return str;
-    }
-
-    Number.prototype.lpadZero = function () {
-        return String(this).lpad("0", 2);
-    }
-
     function setTime() {
-        var now = new Date();
-
-        timeString = now.getHours().lpadZero() + ":" + now.getMinutes().lpadZero();
-        $(".clock-time").text(timeString);
-
-        $(".clock-seconds").text(now.getSeconds().lpadZero());
+        var now = moment();
+        $(".clock-time").text(now.format("HH:mm"));
+        $(".clock-seconds").text(now.format("ss"));
     }
 
     // Update the time every second
@@ -84,40 +69,13 @@
 </script>
 {% endif %}
 
+{# Used by both, analog and digital clock #}
 <script>
-    setDate();
-
     function setDate() {
-        let now = new Date();
-
-        var weekdays = [
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday"
-        ]
-
-        var month = [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November"
-        ]
-
-        result = weekdays[now.getDay()] + ", " +
-            month[now.getMonth()] + " " +
-            now.getDate() + ", " +
-            now.getFullYear();
-        $(".clock-date").text(result);
+        var now = moment();
+        $(".clock-date").text(now.format("dddd, MMMM DD, YYYYY"));
     }
+
+    // Update the date every second
+    setInterval(setDate, 1000);
 </script>
