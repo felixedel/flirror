@@ -1,4 +1,4 @@
-from flask import abort, current_app, jsonify, make_response, request
+from flask import abort, current_app, jsonify, make_response, render_template, request
 
 from flirror.database import get_object_by_key
 from flirror.views import FlirrorMethodView
@@ -11,21 +11,49 @@ def json_abort(status, msg=None):
     abort(make_response(jsonify(response), status))
 
 
-class WeatherApi(FlirrorMethodView):
+class FlirrorApiView(FlirrorMethodView):
+    def init_context(self):
+        # Get view specifc settings from config
+        self.module_id = request.args.get("module_id")
+        self.module_config = [
+            m for m in current_app.config.get("MODULES") if m["id"] == self.module_id
+        ]
+
+        if self.module_config:
+            self.module_config = self.module_config[0]
+        else:
+            # TODO Error handling or just crash?
+            pass
+
+        self.context = {
+            "module": {
+                "type": self.module_config["type"],
+                "id": self.module_id,
+                "config": self.module_config["config"],
+                "display": self.module_config["display"],
+                "error": None,  # TODO What about that?
+            }
+        }
+
+
+class WeatherApi(FlirrorApiView):
 
     endpoint = "api-weather"
     rule = "/api/weather"
-    template_name = None
+    template_name = "modules/weather.html"
 
     FLIRROR_OBJECT_KEY = "module_weather"
 
     def get(self):
-        # TODO Get view-specific settings from config
-        # settings = current_app.config["MODULES"].get(self.endpoint)
-        # city = settings.get("city")
+        self.init_context()
 
         # Get weather data from database
         weather = self.get_weather()
+
+        self.context["module"]["data"] = weather
+        template = render_template(self.template_name, **self.context)
+        weather["_template"] = template
+
         return jsonify(weather)
 
     def get_weather(self):
@@ -34,6 +62,9 @@ class WeatherApi(FlirrorMethodView):
         weather = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{module_id}")
 
         if weather is None:
+            # How to deal with that in ajax?
+            # That would result in an error callback, so we might be able to
+            # template the error directly and only insert the message.
             json_abort(
                 400,
                 f"Could not find weather data for module with ID '{module_id}'. "

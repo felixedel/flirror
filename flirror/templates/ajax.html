@@ -1,0 +1,24 @@
+<script>
+    doAjax();
+
+    function doAjax() {
+        //$("#{{ module.id }}-spinner").addClass("fa-spin");
+        $.ajax({
+            type: 'GET',
+            url: '{{ url_for("api-weather", _external=True) }}',
+            data: {{ {"module_id": module.id} | safe }},
+            success: function (response) {
+                console.log(response.city);
+                $("#{{ module.id }}").html(response._template);
+                // Not necessary, as the card's content will be replaces anyways
+                //$("#{{ module.id }}-spinner").removeClass("fa-spin");
+                // Wait 5 seconds and call doAjax() again
+                setTimeout(doAjax, {{ module.display.refresh | default(5000) }});
+            },
+            error: function (response) {
+                console.log(response);
+                //$("#{{ module.id }}-spinner").removeClass("fa-spin");
+            }
+        });
+    }
+</script>

@@ -1,10 +1,10 @@
 {% extends "module.html" %}
 
 {% block body %}
-<div class="card-body text-center">
+<div id="{{ module.id }}" class="card-body text-center">
     <div class="text-right">
         <small>
-            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+            <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
         </small>
     </div>
     <h3><strong>{{ module.data.city }}</strong></h3>
