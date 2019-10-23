@@ -11,11 +11,13 @@ requires = [
     "click",
     "feedparser",
     "flask",
+    "Flask-Assets",
     "google-api-python-client",
     "google-auth-httplib2",
     "google-auth-oauthlib",
     "pony",
     "pyowm",
+    "pyScss",
     "schedule",
 ]
 

@@ -1,0 +1,81 @@
+<div class="card-body">
+    {% if module.config.mode == "analog" %}
+    {# Analog clock UI #}
+    <div class="clock-container">
+        <h4 class="clock-date pb-2"></h4>
+        <div class="clock">
+            <div class="clock__second"></div>
+            <div class="clock__minute"></div>
+            <div class="clock__hour"></div>
+            <div class="clock__axis"></div>
+            {% for i in range(60) %}
+            <section class="clock__indicator"></section>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    {# Digital clock UI #}
+    <div class="text-center">
+        <h4 class="clock-date medium-emphasis pb-2"></h4>
+        <h1 class="font-weight-light">
+            <span class="clock-time"></span>
+            <small class="font-weight-light">
+                <sup class="clock-seconds disabled"></sup>
+            </small>
+        </h1>
+    </div>
+    {% endif %}
+</div>
+{% if module.config.mode == "analog" %}
+{# Analog clock script #}
+<script>
+    // Javascript is used to set the clock to the current computer time.
+    var currentSec = getSecondsToday();
+
+    var seconds = (currentSec / 60) % 1;
+    var minutes = (currentSec / 3600) % 1;
+    var hours = (currentSec / 43200) % 1;
+
+    setTime(60 * seconds, "second");
+    setTime(3600 * minutes, "minute");
+    setTime(43200 * hours, "hour");
+
+    function setTime(left, hand) {
+        $(".clock__" + hand).css("animation-delay", "" + left * -1 + "s");
+    }
+
+    function getSecondsToday() {
+        let now = new Date();
+
+        let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        let diff = now - today;
+        return Math.round(diff / 1000);
+    }
+
+</script>
+{% else %}
+{# Digital clock script #}
+<script>
+    function setTime() {
+        var now = moment();
+        $(".clock-time").text(now.format("HH:mm"));
+        $(".clock-seconds").text(now.format("ss"));
+    }
+
+    // Update the time every second
+    setInterval(setTime, 1000);
+
+</script>
+{% endif %}
+
+{# Used by both, analog and digital clock #}
+<script>
+    function setDate() {
+        var now = moment();
+        $(".clock-date").text(now.format("dddd, MMMM DD, YYYYY"));
+    }
+
+    // Update the date every second
+    setInterval(setDate, 1000);
+</script>

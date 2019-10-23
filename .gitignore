@@ -15,6 +15,9 @@ dist/
 htmlcov/
 coverage.xml
 
+# Web
+.webassets-cache/
+
 # Development and OS
 .idea
 .DS_Store
