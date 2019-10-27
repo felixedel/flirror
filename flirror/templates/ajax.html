@@ -6,7 +6,7 @@
         $.ajax({
             type: 'GET',
             url: '{{ url_for("api-weather", _external=True) }}',
-            data: {{ {"module_id": module.id} | safe }},
+            data: {{ {"module_id": module.id, "output": "template"} | safe }},
             success: function (response) {
                 console.log(response.city);
                 $("#{{ module.id }}").html(response._template);

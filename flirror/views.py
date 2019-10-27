@@ -69,7 +69,7 @@ class IndexView(FlirrorMethodView):
                 try:
                     res = requests.get(
                         url_for(f"api-{module_type}", _external=True),
-                        params={"module_id": module_id},
+                        params={"module_id": module_id, "output": "raw"},
                     )
                     data = res.json()
                     res.raise_for_status()

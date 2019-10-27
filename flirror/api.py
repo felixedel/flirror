@@ -12,28 +12,57 @@ def json_abort(status, msg=None):
 
 
 class FlirrorApiView(FlirrorMethodView):
-    def init_context(self):
+    def get(self):
         # Get view specifc settings from config
         self.module_id = request.args.get("module_id")
         self.module_config = [
             m for m in current_app.config.get("MODULES") if m["id"] == self.module_id
         ]
+        output_type = request.args.get("output")  # other: raw
+
+        if output_type not in ["template", "raw"]:
+            json_abort(
+                400, "Missing 'output' parameter. Must be one of: ['template', 'raw']."
+            )
+
+        # TODO if output == "template" -> provide only the _template parameter
+        # -> That's how the API must be called via ajax
+        # TODO if output == "raw" -> provide the JSON API "as is" without _template
+        # -> That's how the API must be called from the the index view
+        # (for initial loading)
 
         if self.module_config:
             self.module_config = self.module_config[0]
         else:
             # TODO Error handling or just crash?
+            json_abort(
+                400,
+                f"Could not find any module config for ID '{self.module_id}'. "
+                "Are your sure this one is specified in the config file?",
+            )
             pass
 
-        self.context = {
-            "module": {
-                "type": self.module_config["type"],
-                "id": self.module_id,
-                "config": self.module_config["config"],
-                "display": self.module_config["display"],
-                "error": None,  # TODO What about that?
+        # The data must be retrieved in both cases, template and raw
+        data = self.get_data()
+
+        # TODO Check if data is None
+
+        if output_type == "raw":
+            return jsonify(data)
+        else:
+            context = {
+                "module": {
+                    "type": self.module_config["type"],
+                    "id": self.module_id,
+                    "config": self.module_config["config"],
+                    "display": self.module_config["display"],
+                    "error": None,  # TODO What about that?
+                    "data": data,
+                }
             }
-        }
+
+            template = render_template(self.template_name, **context)
+            return jsonify(_template=template)
 
 
 class WeatherApi(FlirrorApiView):
@@ -44,22 +73,9 @@ class WeatherApi(FlirrorApiView):
 
     FLIRROR_OBJECT_KEY = "module_weather"
 
-    def get(self):
-        self.init_context()
-
-        # Get weather data from database
-        weather = self.get_weather()
-
-        self.context["module"]["data"] = weather
-        template = render_template(self.template_name, **self.context)
-        weather["_template"] = template
-
-        return jsonify(weather)
-
-    def get_weather(self):
-        module_id = request.args.get("module_id")
+    def get_data(self):
         db = current_app.extensions["database"]
-        weather = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{module_id}")
+        weather = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{self.module_id}")
 
         if weather is None:
             # How to deal with that in ajax?
@@ -67,7 +83,7 @@ class WeatherApi(FlirrorApiView):
             # template the error directly and only insert the message.
             json_abort(
                 400,
-                f"Could not find weather data for module with ID '{module_id}'. "
+                f"Could not find weather data for module with ID '{self.module_id}'. "
                 "Did the appropriate crawler run?",
             )
 
