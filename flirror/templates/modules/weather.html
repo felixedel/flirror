@@ -1,7 +1,7 @@
 {% extends "module.html" %}
 
 {% block body %}
-<div id="{{ module.id }}" class="card-body text-center">
+<div class="card-body text-center">
     <div class="text-right">
         <small>
             <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}

@@ -1,12 +1,10 @@
-<div class="card dark">
     {% if module.error %}
     <div class="card-body text-center">
         <h1 class="error"><i class="fas fa-sad-tear"></i> Error {{ module.error.code }}</h1>
         <p class="card-text">
-           {{ module.error.msg }}
+            {{ module.error.msg }}
         </p>
     </div>
     {% else %}
     {% block body %}{% endblock %}
     {% endif %}
-</div>

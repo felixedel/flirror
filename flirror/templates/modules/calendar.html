@@ -4,7 +4,7 @@
 <div class="card-body">
     <div class="text-right">
         <small>
-            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+            <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
         </small>
     </div>
     {% for item in module.data.events %}

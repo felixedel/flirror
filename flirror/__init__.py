@@ -4,7 +4,7 @@ from flask_assets import Bundle, Environment
 from .api import CalendarApi, NewsfeedApi, StocksApi, WeatherApi
 from .database import create_database_and_entities
 from .helpers import make_error_handler
-from .utils import format_time, list_filter, prettydate, weather_icon
+from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
 from .views import CalendarView, IndexView, MapView, WeatherView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -41,6 +41,7 @@ def create_app():
     app.add_template_filter(prettydate)
     app.add_template_filter(format_time)
     app.add_template_filter(list_filter)
+    app.add_template_filter(clean_string)
 
     # Initialize webassets to work with SCSS files
     assets = Environment(app)
