@@ -20,49 +20,71 @@ class FlirrorApiView(FlirrorMethodView):
         ]
         output_type = request.args.get("output")  # other: raw
 
+        # TODO template/raw output?
         if output_type not in ["template", "raw"]:
             json_abort(
                 400, "Missing 'output' parameter. Must be one of: ['template', 'raw']."
             )
 
-        # TODO if output == "template" -> provide only the _template parameter
-        # -> That's how the API must be called via ajax
-        # TODO if output == "raw" -> provide the JSON API "as is" without _template
-        # -> That's how the API must be called from the the index view
-        # (for initial loading)
-
         if self.module_config:
             self.module_config = self.module_config[0]
         else:
-            # TODO Error handling or just crash?
+            # TODO template/raw output?
             json_abort(
                 400,
                 f"Could not find any module config for ID '{self.module_id}'. "
                 "Are your sure this one is specified in the config file?",
             )
-            pass
 
-        # The data must be retrieved in both cases, template and raw
+        # Retrieve the data
         data = self.get_data()
 
-        # TODO Check if data is None
-
+        # Return the data either in raw format or as template
         if output_type == "raw":
+            if data is None:
+                json_abort(
+                    400,
+                    f"Could not find any data for module with ID '{self.module_id}'. "
+                    "Did the appropriate crawler run?",
+                )
+
             return jsonify(data)
-        else:
-            context = {
-                "module": {
-                    "type": self.module_config["type"],
-                    "id": self.module_id,
-                    "config": self.module_config["config"],
-                    "display": self.module_config["display"],
-                    "error": None,  # TODO What about that?
-                    "data": data,
-                }
+
+        error = None
+        if data is None:
+            error = {
+                # TODO Which error code should we use here?
+                "code": 400,
+                "msg": (
+                    f"Could not find any data for module with ID '{self.module_id}'. "
+                    "Did the appropriate crawler run?"
+                ),
             }
 
-            template = render_template(self.template_name, **context)
-            return jsonify(_template=template)
+        # Build template context and return template via JSON
+        context = {
+            "module": {
+                "type": self.module_config["type"],
+                "id": self.module_id,
+                "config": self.module_config["config"],
+                "display": self.module_config["display"],
+                "error": error,
+                "data": data,
+            }
+        }
+
+        template = render_template(self.template_name, **context)
+        return jsonify(_template=template)
+
+    def get_data(self):
+        db = current_app.extensions["database"]
+        data = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{self.module_id}")
+
+        # Change timestamps to datetime objects
+        # TODO This should be done before storing the data, but I'm not sure
+        # how to tell Pony how to serialize the datetime to JSON
+
+        return data
 
 
 class WeatherApi(FlirrorApiView):
@@ -73,101 +95,29 @@ class WeatherApi(FlirrorApiView):
 
     FLIRROR_OBJECT_KEY = "module_weather"
 
-    def get_data(self):
-        db = current_app.extensions["database"]
-        weather = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{self.module_id}")
 
-        if weather is None:
-            # How to deal with that in ajax?
-            # That would result in an error callback, so we might be able to
-            # template the error directly and only insert the message.
-            json_abort(
-                400,
-                f"Could not find weather data for module with ID '{self.module_id}'. "
-                "Did the appropriate crawler run?",
-            )
-
-        # Change timestamps to datetime objects
-        # TODO This should be done before storing the data, but I'm not sure
-        # how to tell Pony how to serialize the datetime to JSON
-        return weather
-
-
-class CalendarApi(FlirrorMethodView):
+class CalendarApi(FlirrorApiView):
 
     endpoint = "api-calendar"
     rule = "/api/calendar"
-    template_name = None
+    template_name = "modules/calendar.html"
 
     FLIRROR_OBJECT_KEY = "module_calendar"
 
-    def get(self):
-        data = self.get_events()
-        return jsonify(data)
 
-    def get_events(self):
-        module_id = request.args.get("module_id")
-        db = current_app.extensions["database"]
-        data = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{module_id}")
-
-        if data is None:
-            json_abort(
-                400,
-                f"Could not find calendar data for module with ID '{module_id}'. "
-                "Did the appropriate crawler run?",
-            )
-
-        # Change timestamps to datetime objects
-        # TODO This should be done before storing the data, but I'm not sure
-        # how to tell Pony how to serialize the datetime to JSON
-        return data
-
-
-class NewsfeedApi(FlirrorMethodView):
+class NewsfeedApi(FlirrorApiView):
 
     endpoint = "api-newsfeed"
     rule = "/api/newsfeed"
-    template_name = None
+    template_name = "modules/newsfeed.html"
 
     FLIRROR_OBJECT_KEY = "module_newsfeed"
 
-    def get(self):
-        module_id = request.args.get("module_id")
-        db = current_app.extensions["database"]
-        data = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{module_id}")
 
-        if data is None:
-            json_abort(
-                400,
-                f"Could not find calendar data for module with ID '{module_id}'. "
-                "Did the appropriate crawler run?",
-            )
-
-        return data
-
-
-class StocksApi(FlirrorMethodView):
+class StocksApi(FlirrorApiView):
 
     endpoint = "api-stocks"
     rule = "/api/stocks"
-    template_name = None
+    template_name = "modules/stocks.html"
 
     FLIRROR_OBJECT_KEY = "module_stocks"
-
-    def get(self):
-        data = self.get_stocks()
-        return jsonify(data)
-
-    def get_stocks(self):
-        module_id = request.args.get("module_id")
-        db = current_app.extensions["database"]
-        data = get_object_by_key(db, f"{self.FLIRROR_OBJECT_KEY}-{module_id}")
-
-        if data is None:
-            json_abort(
-                400,
-                f"Could not find stocks data for module with ID '{module_id}'. "
-                "Did the appropriate crawler run?",
-            )
-
-        return data
