@@ -73,3 +73,17 @@ def format_time(timestamp, format):
 
 def list_filter(list_of_dicts_to_filter, key):
     return [d[key] for d in list_of_dicts_to_filter]
+
+
+def clean_string(string):
+    """
+    Taken from Django:
+    https://github.com/django/django/blob/e3d0b4d5501c6d0bc39f035e4345e5bdfde12e41/django/utils/text.py#L222
+
+    Return the given string converted to a string that can be used for a clean
+    filename. Remove leading and trailing spaces; convert other spaces to
+    underscores; and remove anything that is not an alphanumeric, dash,
+    underscore, or dot.
+    """
+    string = str(string).strip().replace(" ", "_").replace("-", "_")
+    return re.sub(r"(?u)[^-\w.]", "", string)

@@ -1,0 +1,36 @@
+<script>
+    // Use a unique function name per module, otherwise different doAjax()
+    // might interfere with each other.
+    {% set func_suffix = module.id | clean_string %}
+
+    doAjax_{{ func_suffix }}();
+
+    function doAjax_{{ func_suffix }}() {
+        // FIXME (felix): This should cause a spin animation during the ajax reload,
+        // but doesn't work.
+        $("#{{ module.id }}-spinner").addClass("fa-spin");
+        $.ajax({
+            // TODO Set timeout?
+            type: 'GET',
+            url: '{{ url_for("api-" + module.type, _external=True) }}',
+            data: {{ {"module_id": module.id, "output": "template"} | safe }},
+            success: function (response) {
+                // TODO Remove debug output
+                console.log("{{ module.id }}")
+                $("#{{ module.id }}").html(response._template);
+                // Not necessary, as the card's content will be replaced anyways
+                //$("#{{ module.id }}-spinner").removeClass("fa-spin");
+                // Wait 30 seconds and call doAjax() again
+                setTimeout(
+                    doAjax_{{ func_suffix }},
+                    {{ module.display.refresh | default(30000) }}
+                );
+            },
+            error: function (response) {
+                console.log(response);
+                // FIXME (felix): Doesn' work either, see above
+                $("#{{ module.id }}-spinner").removeClass("fa-spin");
+            }
+        });
+    }
+</script>

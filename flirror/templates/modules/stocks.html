@@ -4,13 +4,12 @@
 <div class="card-body">
     <div class="text-right">
         <small>
-            <i class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+            <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
         </small>
     </div>
     {% if module.config.mode == "series" %}
     <canvas id="chart-{{ module.id }}" width="400" height="400"></canvas>
     {# NOTE: Moment.js must be included before Chart.js to make the time axis work #}
-    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"
         integrity="sha256-Uv9BNBucvCPipKQ2NS9wYpJmi8DTOEfTA/nH2aoJALw=" crossorigin="anonymous">
     </script>

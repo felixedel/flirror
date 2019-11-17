@@ -41,7 +41,7 @@
     setTime(43200 * hours, "hour");
 
     function setTime(left, hand) {
-        $(".clock__" + hand).css("animation-delay", "" + left * -1 + "s");
+        $("#{{ module.id }} .clock__" + hand).css("animation-delay", "" + left * -1 + "s");
     }
 
     function getSecondsToday() {
@@ -73,7 +73,7 @@
 <script>
     function setDate() {
         var now = moment();
-        $(".clock-date").text(now.format("dddd, MMMM DD, YYYYY"));
+        $(".clock-date").text(now.format("dddd, MMMM DD, YYYY"));
     }
 
     // Update the date every second
