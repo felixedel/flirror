@@ -1,11 +1,10 @@
 from flask import Flask
 from flask_assets import Bundle, Environment
 
-from .api import CalendarApi, NewsfeedApi, StocksApi, WeatherApi
 from .database import create_database_and_entities
 from .helpers import make_error_handler
 from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
-from .views import IndexView
+from .views import CalendarApi, IndexView, NewsfeedApi, StocksApi, WeatherApi
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
 
