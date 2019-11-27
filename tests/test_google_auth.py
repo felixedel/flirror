@@ -30,8 +30,8 @@ def test_get_credentials_failed(mock_google_env):
     assert credentials is None
 
 
-def test_authenticate_no_existing_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth(database=mock_database)
+def test_authenticate_no_existing_token(mock_google_env, mock_empty_database):
+    goauth = GoogleOAuth(database=mock_empty_database)
     with mock.patch.object(goauth, "ask_for_access", return_value="new_access_token"):
         token = goauth.authenticate()
 
@@ -39,15 +39,15 @@ def test_authenticate_no_existing_token(mock_google_env, mock_database):
 
 
 @freeze_time("2019-08-21 00:00:00")
-def test_authenticate_expired_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth(database=mock_database)
+def test_authenticate_expired_token(mock_google_env, mock_empty_database):
+    goauth = GoogleOAuth(database=mock_empty_database)
     expired_token_data = {
         "access_token": "expired_access_token",
         "expires_in": time.time() - 3600,
         "refresh_token": "refresh_token",
     }
     # Store expired token in database, so it will be found in the authentication process
-    store_object_by_key(mock_database, "google_oauth_token", expired_token_data)
+    store_object_by_key(mock_empty_database, "google_oauth_token", expired_token_data)
 
     with mock.patch.object(
         goauth, "refresh_access_token", return_value="new_access_token"
@@ -57,8 +57,8 @@ def test_authenticate_expired_token(mock_google_env, mock_database):
     assert token == "new_access_token"
 
 
-def test_authenticate_valid_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth(database=mock_database)
+def test_authenticate_valid_token(mock_google_env, mock_empty_database):
+    goauth = GoogleOAuth(database=mock_empty_database)
     valid_token_data = {
         "access_token": "valid_access_token",
         "expires_in": time.time() + 3600,
@@ -66,15 +66,15 @@ def test_authenticate_valid_token(mock_google_env, mock_database):
     }
 
     # Store valid token in database, so it will be found in the authentication process
-    store_object_by_key(mock_database, "google_oauth_token", valid_token_data)
+    store_object_by_key(mock_empty_database, "google_oauth_token", valid_token_data)
 
     token = goauth.authenticate()
     assert token == "valid_access_token"
 
 
 @freeze_time("2019-08-21 00:00:00")
-def test_refresh_access_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth(database=mock_database)
+def test_refresh_access_token(mock_google_env, mock_empty_database):
+    goauth = GoogleOAuth(database=mock_empty_database)
     with requests_mock.mock() as m:
         m.post(
             goauth.GOOGLE_OAUTH_POLL_URL,
@@ -101,7 +101,7 @@ def test_refresh_access_token(mock_google_env, mock_database):
 
         # Ensure that the token was stored in the database with the correct
         # expiration time relative to now
-        stored_token = get_object_by_key(mock_database, "google_oauth_token")
+        stored_token = get_object_by_key(mock_empty_database, "google_oauth_token")
         assert stored_token == {
             "access_token": "some_access_token",
             "expires_in": time.time() + 3600,
@@ -159,8 +159,8 @@ def test_request_initial_access_token(mock_google_env):
 
 
 @freeze_time("2019-08-21 00:00:00")
-def test_poll_for_initial_access_token(mock_google_env, mock_database):
-    goauth = GoogleOAuth(database=mock_database)
+def test_poll_for_initial_access_token(mock_google_env, mock_empty_database):
+    goauth = GoogleOAuth(database=mock_empty_database)
 
     device = {
         "device_code": "device_code",
@@ -189,9 +189,9 @@ def test_poll_for_initial_access_token_expired(mock_google_env):
 
 
 @freeze_time("2019-08-21 00:00:00")
-def test_poll_for_initial_access_token_retry(mock_google_env, mock_database):
+def test_poll_for_initial_access_token_retry(mock_google_env, mock_empty_database):
     # TODO Release and recreate database connection between tests
-    goauth = GoogleOAuth(database=mock_database)
+    goauth = GoogleOAuth(database=mock_empty_database)
 
     # Mock the device with a 0 interval, so we don't actively wait between the calls
     # in this test.
@@ -222,7 +222,7 @@ def test_poll_for_initial_access_token_retry(mock_google_env, mock_database):
 
     # Ensure that the token was stored in the database with the correct
     # expiration time relative to when the token was stored.
-    stored_token = get_object_by_key(mock_database, "google_oauth_token")
+    stored_token = get_object_by_key(mock_empty_database, "google_oauth_token")
     # TODO Validate that the expires_in is "increased" due to the retries? E.g. with
     # freezegun's auto_tick_seconds.
     assert stored_token == {"expires_in": time.time() + 3600}
