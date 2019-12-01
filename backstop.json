@@ -12,11 +12,11 @@
   "scenarios": [
     {
       "label": "Flirror index view",
-      "url": "http://localhost:5000",
+      "url": "http://localhost:8000",
       "referenceUrl": "",
       "readyEvent": "",
       "readySelector": "",
-      "delay": 5,
+      "delay": 3000,
       "hideSelectors": [],
       "removeSelectors": [],
       "hoverSelector": "",
