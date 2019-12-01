@@ -18,6 +18,11 @@ coverage.xml
 # Web
 .webassets-cache/
 
+# CSS regression tests
+backstop_data/bitmaps_test/
+backstop_data/engine_scripts/
+backstop_data/html_report/
+
 # Development and OS
 .idea
 .DS_Store
