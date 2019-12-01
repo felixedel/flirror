@@ -5,6 +5,8 @@ import subprocess
 import sys
 from contextlib import contextmanager
 
+import click
+
 
 @contextmanager
 def run_gunicorn():
@@ -45,8 +47,12 @@ def create_test_database():
         sys.exit(1)
 
 
-# TODO Make this script work also for backstop reference
-def main():
+@click.command()
+@click.argument(
+    "backstop_command",
+    default="test",
+)
+def backstop(backstop_command):
 
     create_test_database()
 
@@ -56,13 +62,15 @@ def main():
     # intented to catch any exception and always do it's cleanup.
     failed = False
     with run_gunicorn():
-        print("Running 'backstop test'")
+        print("Running Backstop JS...")
         # Run Backstop JS test on the running gunicorn server
         # NOTE (felix): Backstop JS will wait 3 secs so the stocks series JS
         # can load completely.
         try:
             backstop_out = subprocess.check_output(
-                ["backstop", "test"], stderr=subprocess.STDOUT, universal_newlines=True
+                ["backstop", backstop_command],
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
             )
             print(backstop_out)
         except subprocess.CalledProcessError as exc:
@@ -77,5 +85,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    backstop()
 
