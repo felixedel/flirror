@@ -4,28 +4,54 @@ import os
 import subprocess
 import sys
 from contextlib import contextmanager
+from multiprocessing import Process
 
 import click
+from flask.cli import DispatchingApp, ScriptInfo
+from flask.helpers import get_debug_flag
+from freezegun import freeze_time
+from werkzeug.serving import run_simple
 
 
 @contextmanager
-def run_gunicorn():
-    """Start a gunicorn server in background and kill it on context leave"""
-    print("Starting gunicorn server...")
-    p = subprocess.Popen(["gunicorn", "-w", "4", "flirror:create_app()"])
+def run_flirror_app():
+    def _run():
+        with freeze_time("2019-11-27 18:50"):
+            # See https://github.com/pallets/flask/blob/master/src/flask/cli.py#L829
+            debug = get_debug_flag()
+            app = DispatchingApp(ScriptInfo().load_app, use_eager_loading=None)
+            run_simple(
+                "127.0.0.1",
+                5000,
+                app,
+                use_reloader=debug,
+                use_debugger=debug,
+                threaded=True,
+                ssl_context=None,
+                extra_files=None,
+            )
+
+    print("Starting local flask server")
+    p = Process(target=_run)
+    p.start()
     try:
         yield p
     finally:
-        print("Killing gunicorn server...")
+        print("Killing local flask server")
         p.terminate()
-        print("Killed gunicorn server")
+        print("Killed local flask server")
 
 
 def create_test_database():
+    # TODO Initialize database in tox env create script
+    # --> So we can use the -r option to also get a fresh database together with
+    # the tox env
+
     # Let tox define where we find the database script
     test_db_script = os.environ.get("TEST_DB_SCRIPT")
 
-    print("Creating test database...")
+    # TODO Look up the database location from the test-settings.cfg file
+    print(f"Creating test database in path {os.path.abspath('test-database.sqlite')}")
     if os.path.exists("test-database.sqlite"):
         print("Test database file already exists, reusing it")
         # TODO Provide a -f/--force option to recreate the test database file?
@@ -48,10 +74,7 @@ def create_test_database():
 
 
 @click.command()
-@click.argument(
-    "backstop_command",
-    default="test",
-)
+@click.argument("backstop_command", default="test")
 def backstop(backstop_command):
 
     create_test_database()
@@ -61,7 +84,7 @@ def backstop(backstop_command):
     # JS command, we would have to pass it through the contextmanager as it is
     # intented to catch any exception and always do it's cleanup.
     failed = False
-    with run_gunicorn():
+    with run_flirror_app():
         print("Running Backstop JS...")
         # Run Backstop JS test on the running gunicorn server
         # NOTE (felix): Backstop JS will wait 3 secs so the stocks series JS
@@ -86,4 +109,3 @@ def backstop(backstop_command):
 
 if __name__ == "__main__":
     backstop()
-

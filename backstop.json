@@ -12,7 +12,7 @@
   "scenarios": [
     {
       "label": "Flirror index view",
-      "url": "http://localhost:8000",
+      "url": "http://localhost:5000",
       "referenceUrl": "",
       "readyEvent": "",
       "readySelector": "",
