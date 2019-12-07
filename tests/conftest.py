@@ -15,7 +15,7 @@ def mock_google_env(monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def mock_database(tmpdir):
+def mock_empty_database(tmpdir):
     database_file = os.path.join(tmpdir, "test_database.sqlite")
     db = create_database_and_entities(
         provider="sqlite", filename=database_file, create_db=True

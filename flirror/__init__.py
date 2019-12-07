@@ -1,11 +1,10 @@
 from flask import Flask
 from flask_assets import Bundle, Environment
 
-from .api import CalendarApi, NewsfeedApi, StocksApi, WeatherApi
 from .database import create_database_and_entities
 from .helpers import make_error_handler
 from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
-from .views import CalendarView, IndexView, MapView, WeatherView
+from .views import CalendarApi, IndexView, NewsfeedApi, StocksApi, WeatherApi
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
 
@@ -24,11 +23,6 @@ def create_app():
     CalendarApi.register_url(app)
     NewsfeedApi.register_url(app)
     StocksApi.register_url(app)
-
-    # The module views (only necessary for debug mode?)
-    WeatherView.register_url(app)
-    CalendarView.register_url(app)
-    MapView.register_url(app)
 
     # Register error handler to known status codes
     error_handler = make_error_handler()
