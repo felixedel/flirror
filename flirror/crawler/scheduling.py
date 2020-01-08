@@ -40,11 +40,12 @@ class SafeScheduler(Scheduler):
         # TODO (felix): Use threads for parallel execution?
         # https://schedule.readthedocs.io/en/stable/faq.html#how-to-execute-jobs-in-parallel
         try:
+            LOGGER.debug("Executing job '%s'", job.tags)
             # TODO (felix): Implement an exponential backoff, that lowers the frequency
             # in which the job is executed in case if failed until it's successful again.
             super()._run_job(job)
-        except Exception:
-            LOGGER.exception("Job execution failed")
+        except Exception as e:
+            LOGGER.error("Execution of job '%s' failed: '%s'", job.tags, str(e))
             job.last_run = datetime.now()
             job._schedule_next_run()
 
@@ -67,12 +68,12 @@ class SafeScheduler(Scheduler):
             )
             return
 
-        self._add_job(interval, unit_method, crawler.crawl)
+        self._add_job(interval, unit_method, crawler.id, crawler.crawl)
 
-    def _add_job(self, interval, unit_method_name, job_to_execute):
+    def _add_job(self, interval, unit_method_name, job_name, job_to_execute):
         job = self.every(interval)
         # Add the job to the schedule
-        getattr(job, unit_method_name).do(job_to_execute)
+        getattr(job, unit_method_name).do(job_to_execute).tag(job_name)
 
     def start(self):
         LOGGER.info("Starting scheduler")

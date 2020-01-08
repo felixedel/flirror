@@ -27,15 +27,19 @@ def test_add_job():
     assert jobs[0].interval == 30
     assert jobs[0].unit == "seconds"
     assert jobs[0].job_func.func == crawler_30s.crawl
+    assert jobs[0].tags == {"test"}
 
     assert jobs[1].interval == 5
     assert jobs[1].unit == "minutes"
     assert jobs[1].job_func.func == crawler_5m.crawl
+    assert jobs[1].tags == {"test"}
 
     assert jobs[2].interval == 10
     assert jobs[2].unit == "minutes"
     assert jobs[2].job_func.func == crawler_10m.crawl
+    assert jobs[2].tags == {"test"}
 
     assert jobs[3].interval == 1
     assert jobs[3].unit == "hours"
     assert jobs[3].job_func.func == crawler_1h.crawl
+    assert jobs[3].tags == {"test"}
