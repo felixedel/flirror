@@ -6,7 +6,7 @@ from flask.config import Config
 
 from flirror import FLIRROR_SETTINGS_ENV
 from flirror.crawler.crawlers import CrawlerFactory
-from flirror.crawler.scheduling import Scheduler
+from flirror.crawler.scheduling import SafeScheduler
 from flirror.database import create_database_and_entities
 from flirror.exceptions import CrawlerConfigError, CrawlerDataError
 
@@ -121,7 +121,7 @@ def crawl(ctx, module, periodic):
     if periodic:
         for crawler in crawlers:
             # TODO Make scheduling configurable (but use as default)
-            scheduler = Scheduler()
+            scheduler = SafeScheduler()
             scheduler.add_job(crawler)
 
         # Finally, start the scheduler
