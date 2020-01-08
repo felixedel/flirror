@@ -8,7 +8,7 @@ from flirror import FLIRROR_SETTINGS_ENV
 from flirror.crawler.crawlers import CrawlerFactory
 from flirror.crawler.scheduling import Scheduler
 from flirror.database import create_database_and_entities
-from flirror.exceptions import CrawlerConfigError
+from flirror.exceptions import CrawlerConfigError, CrawlerDataError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -117,6 +117,7 @@ def crawl(ctx, module, periodic):
         crawlers.append(crawler)
 
     # Do the actual crawling - periodically or not
+    # TODO (felix): How to catch exceptions from a crawler within the scheduler?
     if periodic:
         for crawler in crawlers:
             # TODO Make scheduling configurable (but use as default)
@@ -127,7 +128,10 @@ def crawl(ctx, module, periodic):
         scheduler.start()
     else:
         for crawler in crawlers:
-            crawler.crawl()
+            try:
+                crawler.crawl()
+            except CrawlerDataError as e:
+                LOGGER.error("Crawler %s failed: '%s'", crawler.id, str(e))
 
 
 if __name__ == "__main__":

@@ -8,7 +8,9 @@ import googleapiclient.discovery
 from alpha_vantage.timeseries import TimeSeries
 from google.auth.exceptions import RefreshError
 from pyowm import OWM
+from pyowm.exceptions.api_call_error import APIInvalidSSLCertificateError
 from pyowm.exceptions.api_response_error import UnauthorizedError
+from requests.exceptions import ConnectionError
 
 from flirror.database import store_object_by_key
 from flirror.exceptions import CrawlerConfigError, CrawlerDataError
@@ -50,6 +52,10 @@ class WeatherCrawler(Crawler):
         except UnauthorizedError as e:
             LOGGER.error("Unable to authenticate to OWM API")
             raise CrawlerDataError from e
+        # Despite the name, this exception seem to be raised if no connection is possible
+        # at all (e.g. no network/internet connection).
+        except APIInvalidSSLCertificateError:
+            raise CrawlerDataError("Could not connect to OWM API")
 
         # Get today's weather and weekly forecast
         LOGGER.info("Requesting weather data from OWM for city '%s'", self.city)
@@ -138,7 +144,10 @@ class CalendarCrawler(Crawler):
         self.max_items = max_items
 
     def crawl(self):
-        credentials = GoogleOAuth(self.database, self.SCOPES).get_credentials()
+        try:
+            credentials = GoogleOAuth(self.database, self.SCOPES).get_credentials()
+        except ConnectionError:
+            raise CrawlerDataError("Unable to connect to Google API")
         if not credentials:
             raise CrawlerDataError("Unable to authenticate to Google API")
 
@@ -252,6 +261,20 @@ class NewsfeedCrawler(Crawler):
         news_data = {"_timestamp": time.time(), "news": []}
 
         feed = feedparser.parse(self.url)
+
+        # The feedparser will set the bozo flag/exception whenever something went wrong
+        # (e.g. the XML is not well formatted or couldn't be retrieved at all):
+        # https://pythonhosted.org/feedparser/bozo.html
+        if feed.bozo_exception:
+            raise CrawlerDataError(
+                f"Could not retrieve any news for '{self.name}' due to "
+                f"'{feed.bozo_exception}'"
+            )
+
+        if not feed.entries:
+            LOGGER.warning("News feed entries are empty for '%s'", self.name)
+            return
+
         for entry in feed.entries:
             news_data["news"].append(
                 {
@@ -294,7 +317,10 @@ class StocksCrawler(Crawler):
                     symbol,
                     alias,
                 )
-                data = ts.get_quote_endpoint(symbol)
+                try:
+                    data = ts.get_quote_endpoint(symbol)
+                except ConnectionError:
+                    raise CrawlerDataError("Could not connect to Alpha Vantage API")
                 print(data)
                 stocks_data["stocks"].append(
                     # TODO It looks like alpha_vantage returns a list with the data
@@ -307,7 +333,10 @@ class StocksCrawler(Crawler):
                 LOGGER.info(
                     "Requesting intraday for symbol '%s' with alias '%s'", symbol, alias
                 )
-                data, meta_data = ts.get_intraday(symbol)
+                try:
+                    data, meta_data = ts.get_intraday(symbol)
+                except ConnectionError:
+                    raise CrawlerDataError("Could not connect to Alpha Vantage API")
 
                 # As the dictionary is already "sorted" by the time in chronologial (desc) order,
                 # we could simply reformat it into a list and move the time frame as a value
