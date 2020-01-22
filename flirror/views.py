@@ -174,7 +174,7 @@ def get_module_data(module_id, output, template_name, object_key):
         # TODO template/raw output?
         raise ModuleDataException(
             f"Could not find any module config for ID '{module_id}'. "
-            "Are your sure this one is specified in the config file?"
+            "Are you sure this one is specified in the config file?"
         )
 
     # Retrieve the data
