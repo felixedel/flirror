@@ -58,3 +58,102 @@ def test_weather_api_raw(mock_app):
         "temp_day",
         "temp_night",
     }
+
+
+def test_calendar_api_template(mock_app):
+    res = mock_app.get("/api/calendar?module_id=calendar-my&output=template")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_template"}
+
+
+def test_calendar_api_raw(mock_app):
+    res = mock_app.get("/api/calendar?module_id=calendar-my&output=raw")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_timestamp", "events"}
+
+    assert len(res.json["events"]) == 5
+
+    assert set(res.json["events"][0].keys()) == {
+        "end",
+        "location",
+        "start",
+        "summary",
+        "type",
+    }
+
+
+def test_newsfeed_api_template(mock_app):
+    res = mock_app.get("/api/newsfeed?module_id=news-tagesschau&output=template")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_template"}
+
+
+def test_newsfeed_api_raw(mock_app):
+    res = mock_app.get("/api/newsfeed?module_id=news-tagesschau&output=raw")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_timestamp", "news"}
+
+    assert len(res.json["news"]) == 3
+
+    assert set(res.json["news"][0].keys()) == {"link", "published", "summary", "title"}
+
+
+def test_stocks_api_template_series(mock_app):
+    res = mock_app.get("/api/stocks?module_id=stocks-series&output=template")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_template"}
+
+
+def test_stocks_api_raw_series(mock_app):
+    res = mock_app.get("/api/stocks?module_id=stocks-series&output=raw")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_timestamp", "stocks"}
+
+    assert len(res.json["stocks"]) == 1
+
+    assert set(res.json["stocks"][0].keys()) == {"alias", "data"}
+
+    assert set(res.json["stocks"][0]["data"].keys()) == {"times", "values"}
+    assert len(res.json["stocks"][0]["data"]["times"]) == 5
+    assert len(res.json["stocks"][0]["data"]["values"]) == 5
+
+
+def test_stocks_api_template_table(mock_app):
+    res = mock_app.get("/api/stocks?module_id=stocks-table&output=template")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_template"}
+
+
+def test_stocks_api_raw_table(mock_app):
+    res = mock_app.get("/api/stocks?module_id=stocks-table&output=raw")
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_timestamp", "stocks"}
+
+    assert len(res.json["stocks"]) == 3
+
+    assert set(res.json["stocks"][0].keys()) == {"alias", "data", "symbol"}
+
+
+def test_invalid_api(mock_app):
+    res = mock_app.get("/api/invalid")
+    assert res.status_code == 404
+    assert not res.json
+
+
+def test_api_missing_parameter(mock_app):
+    res = mock_app.get(f"/api/weather?module_id=some-module")
+    assert res.status_code == 400
+    assert res.json == {
+        "error": 400,
+        "msg": "Missing 'output' parameter. Must be one of: ['template', 'raw'].",
+    }
+
+
+def test_api_invalid_module_id(mock_app):
+    res = mock_app.get(f"/api/weather?module_id=invalid-module&output=raw")
+    assert res.status_code == 400
+    assert res.json == {
+        "error": 400,
+        "msg": "Could not find any module config for ID 'invalid-module'. "
+        "Are you sure this one is specified in the config file?",
+    }
