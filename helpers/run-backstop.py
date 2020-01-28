@@ -73,17 +73,23 @@ def create_test_database():
         sys.exit(1)
 
 
-@click.command()
+@click.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("backstop_command", default="test")
-def backstop(backstop_command):
+@click.argument("backstop_options", nargs=-1, type=click.UNPROCESSED)
+def backstop(backstop_command, backstop_options):
 
     create_test_database()
+
+    cmd = ["backstop", backstop_command]
+    if backstop_options is not None:
+        cmd.extend(backstop_options)
 
     # Although I don't like flags, it's the simplest way to get an overall
     # return code. When we use a return 1 in the except block of the Backstop
     # JS command, we would have to pass it through the contextmanager as it is
     # intented to catch any exception and always do it's cleanup.
     failed = False
+
     with run_flirror_app():
         print("Running Backstop JS...")
         # Run Backstop JS test on the running gunicorn server
@@ -91,9 +97,7 @@ def backstop(backstop_command):
         # can load completely.
         try:
             backstop_out = subprocess.check_output(
-                ["backstop", backstop_command],
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
+                cmd, stderr=subprocess.STDOUT, universal_newlines=True,
             )
             print(backstop_out)
         except subprocess.CalledProcessError as exc:
