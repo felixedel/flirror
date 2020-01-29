@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import subprocess
 import sys
@@ -11,6 +12,20 @@ from flask.cli import DispatchingApp, ScriptInfo
 from flask.helpers import get_debug_flag
 from freezegun import freeze_time
 from werkzeug.serving import run_simple
+
+LOGGER = logging.getLogger(__file__)
+LOGGER.setLevel(logging.DEBUG)
+
+# Create handlers
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# Create formatters and add it to handlers
+log_formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+console_handler.setFormatter(log_formatter)
+
+# Add handlers to the logger
+LOGGER.addHandler(console_handler)
 
 
 @contextmanager
@@ -31,15 +46,15 @@ def run_flirror_app():
                 extra_files=None,
             )
 
-    print("Starting local flask server")
+    LOGGER.debug("Starting local flask server")
     p = Process(target=_run)
     p.start()
     try:
         yield p
     finally:
-        print("Killing local flask server")
+        LOGGER.debug("Killing local flask server")
         p.terminate()
-        print("Killed local flask server")
+        LOGGER.debug("Killed local flask server")
 
 
 def create_test_database():
@@ -51,9 +66,11 @@ def create_test_database():
     test_db_script = os.environ.get("TEST_DB_SCRIPT")
 
     # TODO Look up the database location from the test-settings.cfg file
-    print(f"Creating test database in path {os.path.abspath('test-database.sqlite')}")
+    LOGGER.debug(
+        "Creating test database in path %s", os.path.abspath("test-database.sqlite")
+    )
     if os.path.exists("test-database.sqlite"):
-        print("Test database file already exists, reusing it")
+        LOGGER.debug("Test database file already exists, reusing it")
         # TODO Provide a -f/--force option to recreate the test database file?
         return
 
@@ -67,7 +84,7 @@ def create_test_database():
             f"sqlite3 test-database.sqlite < '{test_db_script}'", shell=True
         )
     except subprocess.CalledProcessError:
-        print("Failed to create test database")
+        LOGGER.debug("Failed to create test database")
         # TODO (felix): Only the main function should directly exit() the script.
         # Otherwise it might be hard to follow where and why the script was exited.
         sys.exit(1)
@@ -91,7 +108,7 @@ def backstop(backstop_command, backstop_options):
     failed = False
 
     with run_flirror_app():
-        print("Running Backstop JS...")
+        LOGGER.debug("Running Backstop JS...")
         # Run Backstop JS test on the running gunicorn server
         # NOTE (felix): Backstop JS will wait 3 secs so the stocks series JS
         # can load completely.
@@ -99,13 +116,13 @@ def backstop(backstop_command, backstop_options):
             backstop_out = subprocess.check_output(
                 cmd, stderr=subprocess.STDOUT, universal_newlines=True,
             )
-            print(backstop_out)
+            LOGGER.debug(backstop_out)
         except subprocess.CalledProcessError as exc:
             # I don't like flags
             failed = True
-            print(f"Backstop JS returned {exc.returncode}")
+            LOGGER.debug("Backstop JS returned {}".format(exc.returncode))
             # We want to get the Backstop JS output without the traceback
-            print(exc.output)
+            LOGGER.debug(exc.output)
 
     # In case the Backstop JS command failed, this script should also fail.
     sys.exit(failed)
