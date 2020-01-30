@@ -40,7 +40,11 @@ def prettydate(date):
     When the difference is greater than 7 days, the timestamp will be returned
     instead.
     """
-    now = datetime.now()  # timezone.utc)
+    # TODO (felix): Make all dates timezone aware.
+    # Currently, the dates are not stored with timezone awareness in the database.
+    # (How can we do that?). Additionally, not all dates returned by external
+    # APIs are timezone aware. Thus, for now just assume that everything is UTC.
+    now = datetime.utcnow()
     if isinstance(date, float):
         date = datetime.utcfromtimestamp(date)
     diff = now - date

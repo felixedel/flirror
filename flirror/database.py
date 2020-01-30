@@ -29,6 +29,9 @@ def create_database_and_entities(**db_params):
 
 @db_session
 def store_object_by_key(db, key, value):
+    # TODO Store timezone aware dates in the database. Most probably, we must
+    # provide a custom JSON serializer to pony orm (how can we do that?) to
+    # store datetime objects rather than plain timestamps in the database.
     try:
         LOGGER.debug("Updating object with key '%s' in database", key)
         # The most common case is to update an existing entry.
