@@ -265,7 +265,7 @@ class NewsfeedCrawler(Crawler):
         # The feedparser will set the bozo flag/exception whenever something went wrong
         # (e.g. the XML is not well formatted or couldn't be retrieved at all):
         # https://pythonhosted.org/feedparser/bozo.html
-        if feed.bozo_exception:
+        if "bozo_exception" in feed and feed.bozo_exception:
             raise CrawlerDataError(
                 f"Could not retrieve any news for '{self.name}' due to "
                 f"'{feed.bozo_exception}'"
