@@ -21,7 +21,7 @@ COPY . /src
 
 # Install flirror (mainly used to get all dependencies installed)
 RUN python3 -m pip install -e . \
-  && python3 -m pip install freezegun
+  && python3 -m pip install -r test-requirements.txt
 
 # Backstop JS sets the entrypoint to "backstop" which doesn't allow us to
 # execute an arbitrary bash script. Thus, reset the entrypoint to /bin/sh.
