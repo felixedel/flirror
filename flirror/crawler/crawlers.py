@@ -291,10 +291,6 @@ class NewsfeedCrawler(Crawler):
         for entry in feed.entries[: self.max_items]:
             news_data["news"].append(
                 {
-                    # TODO Remove when not needed any longer. Currently, it's helpful
-                    # to understand the common attributes and see the differences
-                    # between various RSS feeds.
-                    "_raw": entry,
                     "title": entry.title,
                     "summary": entry.summary,
                     "link": entry.id,
