@@ -7,6 +7,22 @@
             <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
         </small>
     </div>
+    {# Show the necessary authentication steps in case we don't have access yet #}
+    {% if module.data.hint %}
+        <div class="pt-2 text-center">
+            <h2 class="text-center primary">
+                <i class="fa fa-exclamation-triangle"></i> Authentication required
+            </h2>
+            <p>
+                Scan the QR code or visit <b>
+                    <a class="secondary" href="{{ module.data.hint.verification_url }}">
+                        {{ module.data.hint.verification_url }}
+                    </a></b>
+                and enter the code <b class="secondary">{{ module.data.hint.user_code }}</b>
+            </p>
+            <img class="qr-img" src="data:image/png;base64,{{ module.data.hint.qr_code }}"/>
+        </div>
+    {% endif %}
     {% for item in module.data.events %}
     <div class="row mb-2">
         <div class="col-3 text-right">

@@ -1,8 +1,11 @@
+import base64
 import logging
 import os
 import time
+from io import BytesIO
 
 import google.oauth2.credentials
+import qrcode
 import requests
 from google_auth_oauthlib.flow import Flow
 
@@ -20,11 +23,12 @@ class GoogleOAuth:
     # We could use the class object to store the active token in the session
     # and check this one first for expiry, before retrieving a new one and store
     # that in the database and session.
-    def __init__(self, database, scopes=None):
+    def __init__(self, database, scopes=None, module_object_key=None):
         if scopes is None:
             scopes = []
         self.scopes = scopes
         self.database = database
+        self.module_object_key = module_object_key
 
     def get_credentials(self):
         token = self.authenticate()
@@ -123,16 +127,37 @@ class GoogleOAuth:
         # Calculate an absolute expiry timestamp for simpler evaluation
         device["expires_in"] += now
 
-        LOGGER.info(
-            "Please visit '%s' and enter '%s'",
-            device["verification_url"],
-            device["user_code"],
-        )
-        # TODO Show a QR code pointing to the URL + entering the code
+        verification_url = device["verification_url"]
+        user_code = device["user_code"]
+        LOGGER.info("Please visit '%s' and enter '%s'", verification_url, user_code)
 
-        # TODO Poll google's auth server in the specified interval until
-        #  a) the user has granted us permission and we get a valid access token
-        #  b) The device code got expired (or another time out from our side)
+        # NOTE (felix): This might overwrite any existing data for the active
+        # calendar module. But as this could only be the case if we don't have
+        # access anymore, it would be more helpful to show this hint rather than
+        # the last crawled data (which will never be updated unless we authenticate)
+        # again.
+        # Once the authentication was successful, the first crawler run will
+        # overwrite the module data with the requested calendar events.
+        qr_img = qrcode.make(verification_url)
+        # NOTE: As found on
+        # https://stackoverflow.com/questions/31826335/how-to-convert-pil-image-image-object-to-base64-string
+        buffered = BytesIO()
+        qr_img.save(buffered, format="PNG")
+        qr_img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        if self.module_object_key is not None:
+            store_object_by_key(
+                self.database,
+                key=self.module_object_key,
+                value={
+                    "_timestamp": now,
+                    "hint": {
+                        "verification_url": verification_url,
+                        "user_code": user_code,
+                        "qr_code": qr_img_str,
+                    },
+                },
+            )
 
         token_data = self.poll_for_initial_access_token(device)
         return token_data["access_token"]

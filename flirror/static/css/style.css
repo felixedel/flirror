@@ -103,6 +103,12 @@ h5 {
     border-radius: 0;
 }
 
+.qr-img {
+    display: inline;
+    width: 150px;
+    height: 150px;
+}
+
 /* Stocks */
 .chg-up {
     color: #99F; /* Same as .third */

@@ -145,7 +145,9 @@ class CalendarCrawler(Crawler):
 
     def crawl(self):
         try:
-            credentials = GoogleOAuth(self.database, self.SCOPES).get_credentials()
+            credentials = GoogleOAuth(
+                self.database, self.SCOPES, self.object_key
+            ).get_credentials()
         except ConnectionError:
             raise CrawlerDataError("Unable to connect to Google API")
         if not credentials:
