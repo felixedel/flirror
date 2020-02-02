@@ -66,6 +66,14 @@ def test_calendar_api_template(mock_app):
     assert set(res.json.keys()) == {"_template"}
 
 
+def test_calendar_api_authentication_template(mock_app):
+    res = mock_app.get(
+        "/api/calendar?module_id=calendar-authentication&output=template"
+    )
+    assert res.status_code == 200
+    assert set(res.json.keys()) == {"_template"}
+
+
 def test_calendar_api_raw(mock_app):
     res = mock_app.get("/api/calendar?module_id=calendar-my&output=raw")
     assert res.status_code == 200
