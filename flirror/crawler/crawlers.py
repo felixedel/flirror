@@ -252,10 +252,21 @@ class NewsfeedCrawler(Crawler):
 
     FLIRROR_OBJECT_KEY = "module_newsfeed"
 
-    def __init__(self, crawler_id, database, url, name, interval=None):
+    DEFAULT_MAX_ITEMS = 5
+
+    def __init__(
+        self,
+        crawler_id,
+        database,
+        url,
+        name,
+        max_items=DEFAULT_MAX_ITEMS,
+        interval=None,
+    ):
         super().__init__(crawler_id, database, interval)
         self.url = url
         self.name = name
+        self.max_items = max_items
 
     def crawl(self):
         LOGGER.info("Requesting news feed '%s' from '%s'", self.name, self.url)
@@ -277,7 +288,7 @@ class NewsfeedCrawler(Crawler):
             LOGGER.warning("News feed entries are empty for '%s'", self.name)
             return
 
-        for entry in feed.entries:
+        for entry in feed.entries[: self.max_items]:
             news_data["news"].append(
                 {
                     # TODO Remove when not needed any longer. Currently, it's helpful
