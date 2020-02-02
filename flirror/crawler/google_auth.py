@@ -20,11 +20,12 @@ class GoogleOAuth:
     # We could use the class object to store the active token in the session
     # and check this one first for expiry, before retrieving a new one and store
     # that in the database and session.
-    def __init__(self, database, scopes=None):
+    def __init__(self, database, scopes=None, module_object_key=None):
         if scopes is None:
             scopes = []
         self.scopes = scopes
         self.database = database
+        self.module_object_key = module_object_key
 
     def get_credentials(self):
         token = self.authenticate()
@@ -123,18 +124,38 @@ class GoogleOAuth:
         # Calculate an absolute expiry timestamp for simpler evaluation
         device["expires_in"] += now
 
-        LOGGER.info(
-            "Please visit '%s' and enter '%s'",
-            device["verification_url"],
-            device["user_code"],
-        )
-        # TODO Show a QR code pointing to the URL + entering the code
+        verification_url = device["verification_url"]
+        user_code = device["user_code"]
+        LOGGER.info("Please visit '%s' and enter '%s'", verification_url, user_code)
 
-        # TODO Poll google's auth server in the specified interval until
-        #  a) the user has granted us permission and we get a valid access token
-        #  b) The device code got expired (or another time out from our side)
+        # TODO Generate a QR code pointing to the URL + entering the code
+        # and store it in the databse (as binary?)
+        # TODO (felix): Do we have to care if this overwrites the last crawled
+        # data? IMHO this could only be the case if we don't have access anymore.
+        # And in that case it would be more helpful to show this hint rather than
+        # the last crawled data (which will never be updated unless we authenticate)
+        # again.
+        if self.module_object_key is not None:
+            store_object_by_key(
+                self.database,
+                key=self.module_object_key,
+                value={
+                    "_timestamp": now,
+                    "hint": {
+                        "verification_url": verification_url,
+                        "user_code": user_code,
+                    },
+                },
+            )
+
+        # TODO Store the user code and the verification URL in the database,
+        # so the UI can show a QR code pointing to that URL and information
+        # about the necessary steps to take.
 
         token_data = self.poll_for_initial_access_token(device)
+
+        # TODO Once we have a token, we might want to delete the temporary
+        # "Use the QR code and enter the usercode information" data in the database.
         return token_data["access_token"]
 
     def poll_for_initial_access_token(self, device):
