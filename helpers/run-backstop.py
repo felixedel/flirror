@@ -6,6 +6,7 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from multiprocessing import Process
+from pathlib import Path
 
 import click
 from flask.cli import DispatchingApp, ScriptInfo
@@ -57,22 +58,20 @@ def run_flirror_app():
         LOGGER.debug("Killed local flask server")
 
 
-def create_test_database():
-    # TODO Initialize database in tox env create script
-    # --> So we can use the -r option to also get a fresh database together with
-    # the tox env
-
-    # Let tox define where we find the database script
+def create_test_database(force=False):
+    # Look up the location of the database script
     test_db_script = os.environ.get("TEST_DB_SCRIPT")
 
+    database_path = Path("test-database.sqlite")
     # TODO Look up the database location from the test-settings.cfg file
-    LOGGER.debug(
-        "Creating test database in path %s", os.path.abspath("test-database.sqlite")
-    )
-    if os.path.exists("test-database.sqlite"):
+    LOGGER.debug("Creating test database in path %s", database_path.absolute())
+    if database_path.exists() and not force:
         LOGGER.debug("Test database file already exists, reusing it")
-        # TODO Provide a -f/--force option to recreate the test database file?
         return
+
+    if database_path.exists():
+        LOGGER.debug("Force option set. Forcing recreation of test database.")
+        database_path.unlink()
 
     try:
         # NOTE (felix): This command is much more convenient than doing the whole
@@ -92,10 +91,13 @@ def create_test_database():
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("backstop_command", default="test")
+@click.option(
+    "--force/--no-force", default=False, help="Force recreation of test database"
+)
 @click.argument("backstop_options", nargs=-1, type=click.UNPROCESSED)
-def backstop(backstop_command, backstop_options):
+def backstop(backstop_command, force, backstop_options):
 
-    create_test_database()
+    create_test_database(force)
 
     cmd = ["backstop", backstop_command]
     if backstop_options is not None:
@@ -114,7 +116,7 @@ def backstop(backstop_command, backstop_options):
         # can load completely.
         try:
             backstop_out = subprocess.check_output(
-                cmd, stderr=subprocess.STDOUT, universal_newlines=True,
+                cmd, stderr=subprocess.STDOUT, universal_newlines=True
             )
             LOGGER.debug(backstop_out)
         except subprocess.CalledProcessError as exc:
