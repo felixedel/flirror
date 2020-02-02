@@ -18,6 +18,7 @@ requires = [
     "pony",
     "pyowm",
     "pyScss",
+    "qrcode[pil]",
     "schedule",
 ]
 

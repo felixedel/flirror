@@ -1,8 +1,11 @@
+import base64
 import logging
 import os
 import time
+from io import BytesIO
 
 import google.oauth2.credentials
+import qrcode
 import requests
 from google_auth_oauthlib.flow import Flow
 
@@ -128,13 +131,20 @@ class GoogleOAuth:
         user_code = device["user_code"]
         LOGGER.info("Please visit '%s' and enter '%s'", verification_url, user_code)
 
-        # TODO Generate a QR code pointing to the URL + entering the code
-        # and store it in the databse (as binary?)
-        # TODO (felix): Do we have to care if this overwrites the last crawled
-        # data? IMHO this could only be the case if we don't have access anymore.
-        # And in that case it would be more helpful to show this hint rather than
+        # NOTE (felix): This might overwrite any existing data for the active
+        # calendar module. But as this could only be the case if we don't have
+        # access anymore, it would be more helpful to show this hint rather than
         # the last crawled data (which will never be updated unless we authenticate)
         # again.
+        # Once the authentication was successful, the first crawler run will
+        # overwrite the module data with the requested calendar events.
+        qr_img = qrcode.make(verification_url)
+        # NOTE: As found on
+        # https://stackoverflow.com/questions/31826335/how-to-convert-pil-image-image-object-to-base64-string
+        buffered = BytesIO()
+        qr_img.save(buffered, format="PNG")
+        qr_img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
         if self.module_object_key is not None:
             store_object_by_key(
                 self.database,
@@ -144,18 +154,12 @@ class GoogleOAuth:
                     "hint": {
                         "verification_url": verification_url,
                         "user_code": user_code,
+                        "qr_code": qr_img_str,
                     },
                 },
             )
 
-        # TODO Store the user code and the verification URL in the database,
-        # so the UI can show a QR code pointing to that URL and information
-        # about the necessary steps to take.
-
         token_data = self.poll_for_initial_access_token(device)
-
-        # TODO Once we have a token, we might want to delete the temporary
-        # "Use the QR code and enter the usercode information" data in the database.
         return token_data["access_token"]
 
     def poll_for_initial_access_token(self, device):
