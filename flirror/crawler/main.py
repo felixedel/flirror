@@ -119,9 +119,8 @@ def crawl(ctx, module, periodic):
     # Do the actual crawling - periodically or not
     # TODO (felix): How to catch exceptions from a crawler within the scheduler?
     if periodic:
+        scheduler = SafeScheduler()
         for crawler in crawlers:
-            # TODO Make scheduling configurable (but use as default)
-            scheduler = SafeScheduler()
             scheduler.add_job(crawler)
 
         # Finally, start the scheduler
