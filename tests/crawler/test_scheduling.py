@@ -1,3 +1,8 @@
+from datetime import datetime
+
+import pytest
+from schedule import Scheduler
+
 from flirror.crawler.crawlers import Crawler
 from flirror.crawler.scheduling import SafeScheduler
 
@@ -43,3 +48,29 @@ def test_add_job():
     assert jobs[3].unit == "hours"
     assert jobs[3].job_func.func == crawler_1h.crawl
     assert jobs[3].tags == {"test"}
+
+
+def _failjob():
+    raise Exception("I will always fail")
+
+
+def test_exception_handling():
+    # The normal scheduler will fail when a job raises an exception and the job
+    # will be marked as if it was never run.
+    normal_scheduler = Scheduler()
+    normal_scheduler.every(1).hour.do(_failjob)
+
+    with pytest.raises(Exception) as excinfo:
+        normal_scheduler.run_all()
+    assert "I will always fail" in str(excinfo)
+    assert normal_scheduler.jobs[0].last_run is None
+    assert normal_scheduler.jobs[0].next_run > datetime.now()
+
+    # The Safe scheduler can deal with this and just schedules the next
+    # execution of this job
+    safe_scheduler = SafeScheduler()
+    safe_scheduler.every(1).hour.do(_failjob)
+    safe_scheduler.run_all()
+
+    assert safe_scheduler.jobs[0].last_run < datetime.now()
+    assert safe_scheduler.jobs[0].next_run > datetime.now()
