@@ -302,13 +302,22 @@ class ExceptionUndefined(Undefined):
         raise UndefinedError(f"Variable '{self._undefined_name}' is not defined")
 
 
-@pytest.fixture(scope="session")
-def mock_app(tmpdir_factory):
+@pytest.fixture(scope="function")
+def mock_env(monkeypatch):
+    # Use the test-settings file for the mocked flask app, but patch the database path
+    monkeypatch.setenv(
+        "FLIRROR_SETTINGS", os.path.join(FIXTURE_DIR, "test-settings.cfg")
+    )
+
+    # TODO Which database will be used here
+
+
+@pytest.fixture(scope="function")
+def mock_app(mock_env, tmpdir_factory):
     # NOTE (felix): We are using the tmpdir_factory rather than tmpdir to allow
     # this fixture be defined on a session scope.
 
     # Use the test-settings file for the mocked flask app, but patch the database path
-    os.environ["FLIRROR_SETTINGS"] = os.path.join(FIXTURE_DIR, "test-settings.cfg")
     config = {"DATABASE_FILE": str(tmpdir_factory.mktemp("data").join("test.db"))}
 
     # Overwrite the jinja options to make template rendering fail on undefined variables

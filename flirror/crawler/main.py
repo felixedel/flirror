@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import click
 from flask.config import Config
@@ -49,6 +50,24 @@ def main(ctx, verbosity):
     config = Config(root_path=".")
     # TODO Add default settings, once we have some
     # config.from_object(default_settings)
+
+    if not os.environ.get(FLIRROR_SETTINGS_ENV):
+        raise click.ClickException(
+            "Unable to load configuration. The environment variable 'FLIRROR_SETTINGS' "
+            "is not set. Please set this variable and make it point to a configuration "
+            "file."
+        )
+
+    # Validate that the path exist for a nicer error message.
+    # Otherwise, we will only get a FileNotFoundError() when the config.from_envvar fails.
+    config_path = Path(os.environ[FLIRROR_SETTINGS_ENV])
+    if not config_path.exists():
+        raise click.ClickException(
+            f"The config file '{config_path}' set in 'FLIRROR_SETTINGS' environment "
+            "variable does not exist. Please make this variable point to an existing "
+            "configuration file."
+        )
+
     config.from_envvar(FLIRROR_SETTINGS_ENV)
 
     # TODO Validate config?
@@ -83,11 +102,24 @@ def crawl(ctx, module, periodic):
     factory = CrawlerFactory()
 
     config_modules = config.get("MODULES", [])
+
     if module:
         # Filter crawlers for provided module IDs
         crawler_configs = [m for m in config_modules if m["id"] in module]
+        # TODO If only a subset of the specified modules could be found,
+        # log the remaining ones as "not found".
+        if not crawler_configs:
+            raise click.ClickException(
+                f"None of the specified modules '{','.join(module)}' could be "
+                "found in the configuration file. Nothing to run."
+            )
     else:
         crawler_configs = config_modules
+
+    if not crawler_configs:
+        raise click.ClickException(
+            "No modules specified in config file. Nothing to run."
+        )
 
     crawlers = []
     # Look up crawlers from config file
@@ -112,16 +144,14 @@ def crawl(ctx, module, periodic):
             crawler_id=crawler_id,
             database=db,
             **crawler_config["config"],
-            interval=interval
+            interval=interval,
         )
         crawlers.append(crawler)
 
     # Do the actual crawling - periodically or not
-    # TODO (felix): How to catch exceptions from a crawler within the scheduler?
     if periodic:
+        scheduler = SafeScheduler()
         for crawler in crawlers:
-            # TODO Make scheduling configurable (but use as default)
-            scheduler = SafeScheduler()
             scheduler.add_job(crawler)
 
         # Finally, start the scheduler
@@ -131,7 +161,7 @@ def crawl(ctx, module, periodic):
             try:
                 crawler.crawl()
             except CrawlerDataError as e:
-                LOGGER.error("Crawler %s failed: '%s'", crawler.id, str(e))
+                LOGGER.error("Crawler '%s' failed: '%s'", crawler.id, str(e))
 
 
 if __name__ == "__main__":

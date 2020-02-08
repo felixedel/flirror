@@ -42,7 +42,7 @@ class SafeScheduler(Scheduler):
         try:
             LOGGER.debug("Executing job '%s'", job.tags)
             # TODO (felix): Implement an exponential backoff, that lowers the frequency
-            # in which the job is executed in case if failed until it's successful again.
+            # in which the job is executed in case it failed until it's successful again.
             super()._run_job(job)
         except Exception as e:
             LOGGER.error("Execution of job '%s' failed: '%s'", job.tags, str(e))
