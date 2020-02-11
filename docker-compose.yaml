@@ -34,3 +34,38 @@ services:
     volumes:
       - .:/src
     command: reference
+  web:
+    build:
+      dockerfile: dockerfiles/flirror-Dockerfile
+      context: .
+    image: flirror
+    ports:
+      - "8000:8000"
+    environment:
+      - FLIRROR_SETTINGS=/opt/settings.cfg
+    volumes:
+      # TODO For production: No need to mount the whole workspace.
+      # Only mount the settings.cfg and provide a docker volume
+      # for the database
+      - .:/opt
+      #- ./settings.cfg:/opt/settings.cfg
+    # Make gunicorn listen on all network interfaces (0.0.0.0) to make it
+    # reachable outside the docker container
+    # TODO (felix): When using the same command inside the Dockerfile, it
+    # always complains about the braces in the end (escape those?).
+    command: gunicorn -w 4 --bind 0.0.0.0:8000 flirror:create_app()
+  crawler:
+    build:
+      dockerfile: dockerfiles/flirror-Dockerfile
+      context: .
+    image: flirror
+    environment:
+      - FLIRROR_SETTINGS=/opt/settings.cfg
+      - GOOGLE_OAUTH_CLIENT_SECRET=/opt/google_oauth_client_secret.json
+    volumes:
+      # TODO For production: No need to mount the whole workspace.
+      # Only mount the settings.cfg and provide a docker volume
+      # for the database
+      - .:/opt
+      #- ./settings.cfg:/opt/settings.cfg
+    command: flirror-crawler crawl --periodic

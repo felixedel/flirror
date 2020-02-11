@@ -15,4 +15,4 @@ xset s noblank
 # https://peter.sh/experiments/chromium-command-line-switches/
 
 # Launch chrome in full-screen mode
-chromium-browser --app --kiosk "http://localhost:5000"
+chromium-browser --app --kiosk "http://localhost:8000"
