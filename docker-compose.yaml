@@ -2,7 +2,7 @@ version: "3"
 services:
   css-test:
     build:
-      dockerfile: Dockerfile
+      dockerfile: dockerfiles/css-Dockerfile
       context: .
     # Provide an image name to share the docker image between the
     # services in this file
@@ -20,7 +20,7 @@ services:
     # TODO (felix): Is there a way to reuse the parameters
     # from the "css-test" service?
     build:
-      dockerfile: Dockerfile
+      dockerfile: dockerfiles/css-Dockerfile
       context: .
     # Provide an image name to share the docker image between the
     # services in this file
