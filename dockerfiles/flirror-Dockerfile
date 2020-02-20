@@ -5,17 +5,18 @@ WORKDIR /opt
 # TODO For "prodution": Not needed when we install flirror from PyPI
 COPY . /opt
 
-RUN apk add --no-cache git
-
 # Packages needed to build pillow
 RUN apk add --no-cache --virtual .build-deps \
         build-base \
+        libffi-dev \
+        openssl-dev \
         python3-dev \
         py-pip \
         jpeg-dev \
         zlib-dev \
     # TODO For "production": Install flirror from PyPI?
-    && pip3 install -e . \
+    && pip3 install poetry \
+    && POETRY_VIRTUALENVS_CREATE=false poetry install -v \
     && pip3 install gunicorn \
     # Delete build dependencies
     && apk del .build-deps
@@ -25,4 +26,4 @@ EXPOSE 8000
 
 # Make gunicorn listen on all network interfaces (0.0.0.0) to make it
 # reachable outside the docker container
-# CMD gunicorn -w 4 --bind 0.0.0.0:8000 flirror:create_app()
+CMD gunicorn -w 4 --bind 0.0.0.0:8000 flirror:create_app\(\)

@@ -19,9 +19,10 @@ RUN add-apt-repository "deb http://ftp.de.debian.org/debian testing main" \
 # Backstop JS expects everything in the /src directory
 COPY . /src
 
-# Install flirror (mainly used to get all dependencies installed)
-RUN python3 -m pip install -e . \
-  && python3 -m pip install -r test-requirements.txt
+# Install flirror via poetry together with all (test) dependencies
+# As we are inside a Dockerfile, we don't need poetry to create a virtualenv
+RUN python3 -m pip install poetry \
+  && POETRY_VIRTUALENVS_CREATE=false poetry install -v
 
 # Backstop JS sets the entrypoint to "backstop" which doesn't allow us to
 # execute an arbitrary bash script. Thus, reset the entrypoint to /bin/sh.
