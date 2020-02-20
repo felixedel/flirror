@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "flirror"
+version = "0.0.9"
+description = "A smartmirror based on Flask"
+authors = ["Felix Edel <felixfelix.schmidt@googlemail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/felixedel/flirror"
+documentation = "https://github.com/felixedel/flirror/blob/master/README.md"
+keywords = ["smartmirror", "magicmirror", "flask"]
+
+[tool.poetry.scripts]
+flirror-crawler = "flirror.crawler.main:main"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+alpha_vantage = "^2.1.3"
+arrow = "^0.15.5"
+click = "^7.0"
+feedparser = "^5.2.1"
+flask = "^1.1.1"
+Flask-Assets = "^2.0"
+google-api-python-client = "^1.7.11"
+google-auth-httplib2 = "^0.0.3"
+google-auth-oauthlib = "^0.4.1"
+pony = "^0.7.11"
+pyowm = "^2.10.0"
+pyScss = "^1.3.5"
+qrcode = "^6.1"
+Pillow = "^7.0.0"
+schedule = "^0.6.0"
+
+[tool.poetry.dev-dependencies]
+black = "^19.10b0"
+flake8 = "^3.7.9"
+freezegun = "^0.3.14"
+pre-commit = "^2.0.1"
+pytest = "^5.3.5"
+pytest-cov = "^2.8.1"
+requests-mock = "^1.7.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
