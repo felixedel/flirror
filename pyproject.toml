@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flirror"
-version = "0.0.9"
+version = "1.0.0"
 description = "A smartmirror based on Flask"
 authors = ["Felix Edel <felixfelix.schmidt@googlemail.com>"]
 license = "MIT"
