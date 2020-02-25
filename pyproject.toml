@@ -10,6 +10,7 @@ documentation = "https://github.com/felixedel/flirror/blob/master/README.md"
 keywords = ["smartmirror", "magicmirror", "flask"]
 
 [tool.poetry.scripts]
+flirror-web = "flirror:run_web"
 flirror-crawler = "flirror.crawler.main:main"
 
 [tool.poetry.dependencies]
