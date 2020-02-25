@@ -1,3 +1,6 @@
+import subprocess
+
+import click
 from flask import Flask
 from flask_assets import Bundle, Environment
 
@@ -60,7 +63,7 @@ def create_app(config=None, jinja_options=None):
     # Usually, it should be sufficient, when the crawler creates the database. If it
     # is not created here, we should just provide somee message to start the crawler.
     db = create_database_and_entities(
-        provider="sqlite", filename=app.config["DATABASE_FILE"], create_db=True,
+        provider="sqlite", filename=app.config["DATABASE_FILE"], create_db=True
     )
 
     # Store the dabase connection in flask's extensions dictionary.
@@ -71,3 +74,21 @@ def create_app(config=None, jinja_options=None):
         app.extensions["database"] = db
 
     return app
+
+
+# NOTE (felix): It looks like poetry only supports python entry points and no
+# arbitrary scripts (e.g. shell) like setup.py (although a setup.py file is
+# generated in the end): https://github.com/python-poetry/poetry/issues/241
+# Thus, we start gunicorn as subprocess from within Python to bypass this
+# limitation.
+@click.command(context_settings=dict(ignore_unknown_options=True))
+@click.argument("gunicorn_options", nargs=-1, type=click.UNPROCESSED)
+def run_web(gunicorn_options):
+    # Start gunicorn to serve the flirror application
+    cmd = ["gunicorn", "flirror:create_app()"]
+
+    # Allow arbitrary gunicorn options to be provided
+    if gunicorn_options is not None:
+        cmd.extend(gunicorn_options)
+
+    subprocess.call(cmd)

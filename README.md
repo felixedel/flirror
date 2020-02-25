@@ -117,7 +117,22 @@ For more detailed configuration examples, please take a look at the
 Each module entry defined in this configuration file will be shown as a single
 tile in **flirror-web** and will be crawled independently in **flirror-crawler**.
 
-### TODO How to start flirror-web
+### Start flirror-web
+
+To start flirror-web, simply run the following command:
+
+```shell
+$ flirror-web
+```
+
+which will start a [gunicorn](https://gunicorn.org/) server serving the flirror
+application on `http://127.0.0.1`. The script accepts arbitrary parameters, so
+you could further configure the gunicorn command that is executed in the end, by
+e.g. specifying the number workers or changing the address. For a list of
+available command line arguments, please refer to gunicorn's [documentation](https://docs.gunicorn.org/en/stable/run.html#commonly-used-arguments).
+
+If you don't want to use gunicorn, you could take a look at Flask's
+[uWSGI](https://flask.palletsprojects.com/en/1.1.x/deploying/uwsgi/) guide.
 
 ### Start the crawler
 

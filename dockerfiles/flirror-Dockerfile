@@ -17,7 +17,6 @@ RUN apk add --no-cache --virtual .build-deps \
     # TODO For "production": Install flirror from PyPI?
     && pip3 install poetry \
     && POETRY_VIRTUALENVS_CREATE=false poetry install -v \
-    && pip3 install gunicorn \
     # Delete build dependencies
     && apk del .build-deps
 
@@ -26,4 +25,4 @@ EXPOSE 8000
 
 # Make gunicorn listen on all network interfaces (0.0.0.0) to make it
 # reachable outside the docker container
-CMD gunicorn -w 4 --bind 0.0.0.0:8000 flirror:create_app\(\)
+CMD flirror-web -w 4 --bind 0.0.0.0:8000
