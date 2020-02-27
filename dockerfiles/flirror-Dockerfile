@@ -2,7 +2,12 @@ FROM python:3.8.1-alpine3.11
 
 WORKDIR /opt
 
-# TODO For "prodution": Not needed when we install flirror from PyPI
+# NOTE (felix): Originally, I wanted to build the docker image with the
+# released flirror version on PyPI. But, if we want to use automated docker
+# builds on docker hub, we might keep the installation from sources so we
+# are able to trigger builds whenever a change is merged to master (latest)
+# or a tag is pushed (concrete release version).
+# In the end it doesn't matter as the code-state is the same.
 COPY . /opt
 
 # Packages needed to build pillow
@@ -14,9 +19,9 @@ RUN apk add --no-cache --virtual .build-deps \
         py-pip \
         jpeg-dev \
         zlib-dev \
-    # TODO For "production": Install flirror from PyPI?
-    && pip3 install poetry \
-    && POETRY_VIRTUALENVS_CREATE=false poetry install -v \
+    # Upgrade pip, so we can use it directly to install flirror
+    && pip install --upgrade pip \
+    && pip install . \
     # Delete build dependencies
     && apk del .build-deps
 
