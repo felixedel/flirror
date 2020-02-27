@@ -1,0 +1,29 @@
+version: "3"
+services:
+  web:
+    image: felixedel/flirror:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - FLIRROR_SETTINGS=/opt/settings.cfg
+      - FLIRROR_VERBOSITY=debug
+    volumes:
+      # Mount settings file
+      - ./settings.cfg:/opt/settings.cfg
+      # Use volume for database
+      - db-data:/opt/flirror-data
+  crawler:
+    image: felixedel/flirror:latest
+    environment:
+      - FLIRROR_SETTINGS=/opt/settings.cfg
+      - FLIRROR_VERBOSITY=debug
+      - GOOGLE_OAUTH_CLIENT_SECRET=/opt/goauth_client_secret.json
+    volumes:
+      # Mount settings and google oauth secret file
+      - ./settings.cfg:/opt/settings.cfg
+      - ./goauth_client_secret.json:/opt/goauth_client_secret.json
+      # Use volume for database
+      - db-data:/opt/flirror-data
+    command: flirror-crawler crawl --periodic
+volumes:
+  db-data:

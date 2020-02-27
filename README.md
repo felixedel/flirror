@@ -69,6 +69,24 @@ simple key value pairs and SQLite comes
 
 ## Usage
 
+### Installation
+
+Flirror can simply be installed via pip:
+```shell
+$ pip install flirror
+```
+
+or via docker:
+```shell
+$ docker pull felixedel/flirror
+```
+
+Deploying flirror via docker is simplest using docker-compose. An example
+docker-compose stack can be found in the `deploy/docker-compose.example.yaml`
+file.
+
+### Configuration
+
 Both applications - **flirror-web** and **flirror-crawler** - read their
 configuration from the file path given via the `FLIRROR_SETTINGS` environment
 variable, e.g.
