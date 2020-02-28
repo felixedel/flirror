@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+## [v1.0.1] - 2020-02-28
 
 ### Notes
 - Automated docker builds on [Docker Hub](https://hub.docker.com/) were set up.
@@ -19,6 +21,10 @@
 ### Fixes
 - Added missing gunicorn depedency.
 
-## 1.0.0
+## [v1.0.0] - 2020-02-25
 
 Initial release
+
+[Unreleased]: https://github.com/felixedel/flirror/compare/v1.0.1...HEAD
+[v1.0.1]: https://github.com/felixedel/flirror/compare/v1.0.0...v1.0.1
+[v1.0.0]: https://github.com/felixedel/flirror/releases/tag/v1.0.0
