@@ -1,6 +1,9 @@
 version: "3"
 services:
   web:
+    # Use the following image instead if you want to deploy flirror
+    # on a Raspberry Pi
+    # image: felixedel/flirror:latest-armv7
     image: felixedel/flirror:latest
     ports:
       - "8000:8000"
@@ -13,6 +16,9 @@ services:
       # Use volume for database
       - db-data:/opt/flirror-data
   crawler:
+    # Use the following image instead if you want to deploy flirror
+    # on a Raspberry Pi
+    # image: felixedel/flirror:latest-armv7
     image: felixedel/flirror:latest
     environment:
       - FLIRROR_SETTINGS=/opt/settings.cfg
