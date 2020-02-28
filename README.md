@@ -69,6 +69,24 @@ simple key value pairs and SQLite comes
 
 ## Usage
 
+### Installation
+
+Flirror can simply be installed via pip:
+```shell
+$ pip install flirror
+```
+
+or via docker:
+```shell
+$ docker pull felixedel/flirror
+```
+
+Deploying flirror via docker is simplest using docker-compose. An example
+docker-compose stack can be found in the `deploy/docker-compose.example.yaml`
+file.
+
+### Configuration
+
 Both applications - **flirror-web** and **flirror-crawler** - read their
 configuration from the file path given via the `FLIRROR_SETTINGS` environment
 variable, e.g.
@@ -280,16 +298,18 @@ $ pipx install docker-compose
 
 ### Start flirror
 
-Both components, `flirror-web` and `flirror-crawler` can be started via the
-`docker-compose.yaml` file within this repository. Thus, you can simply start
-both services by running
+Both componenents can be started using the docker-compose file provided in
+`deploy/docker-compose.example.yaml`. You just need to change the `latest`
+tag of the image used for both services to `latest:armv7` since a Raspberry Pi
+is using arm architecture and that needs a dedicated docker image.
+
+Afterwards, simply run
 
 ```shell
-$ docker-compose up web crawler
+$ docker-compose up
 ```
 
-within the root of this repository. This will start the web UI and the crawler
-application in periodic mode.
+to start the web server and the crawler in periodic mode.
 
 With both services running we still need to open some browser to see the actual
 flirror UI. This can be done by executing the `helpers/start_gui.sh` helper
