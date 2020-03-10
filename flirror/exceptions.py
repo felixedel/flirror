@@ -1,3 +1,9 @@
+class FlirrorConfigError(Exception):
+    """Exception if Flirror could not be initialized correctly."""
+
+    pass
+
+
 class CrawlerConfigError(Exception):
     """Exception if a crawler could not be initialized correctly."""
 
