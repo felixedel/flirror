@@ -3,7 +3,6 @@ from datetime import datetime
 import pytest
 from schedule import Scheduler
 
-from flirror.crawler.crawlers import Crawler
 from flirror.crawler.scheduling import SafeScheduler
 
 

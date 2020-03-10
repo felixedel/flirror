@@ -97,26 +97,3 @@ class IndexView(FlirrorMethodView):
 
         context = self.get_context(**ctx_data)
         return render_template(self.template_name, **context)
-
-
-class FlirrorApiView(FlirrorMethodView):
-    def get(self):
-        return current_app.basic_get(self.template_name, self.FLIRROR_OBJECT_KEY)
-
-
-class NewsfeedApi(FlirrorApiView):
-
-    endpoint = "api-newsfeed"
-    rule = "/api/newsfeed"
-    template_name = "modules/newsfeed.html"
-
-    FLIRROR_OBJECT_KEY = "module_newsfeed"
-
-
-class StocksApi(FlirrorApiView):
-
-    endpoint = "api-stocks"
-    rule = "/api/stocks"
-    template_name = "modules/stocks.html"
-
-    FLIRROR_OBJECT_KEY = "module_stocks"

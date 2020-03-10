@@ -89,13 +89,13 @@ def test_calendar_api_raw(mock_app):
 
 
 def test_newsfeed_api_template(mock_app):
-    res = mock_app.get("/api/newsfeed?module_id=news-tagesschau&output=template")
+    res = mock_app.get("/newsfeed/?module_id=news-tagesschau&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_newsfeed_api_raw(mock_app):
-    res = mock_app.get("/api/newsfeed?module_id=news-tagesschau&output=raw")
+    res = mock_app.get("/newsfeed/?module_id=news-tagesschau&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "news"}
 
@@ -105,13 +105,13 @@ def test_newsfeed_api_raw(mock_app):
 
 
 def test_stocks_api_template_series(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-series&output=template")
+    res = mock_app.get("/stocks/?module_id=stocks-series&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_stocks_api_raw_series(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-series&output=raw")
+    res = mock_app.get("/stocks/?module_id=stocks-series&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "stocks"}
 
@@ -125,13 +125,13 @@ def test_stocks_api_raw_series(mock_app):
 
 
 def test_stocks_api_template_table(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-table&output=template")
+    res = mock_app.get("/stocks/?module_id=stocks-table&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_stocks_api_raw_table(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-table&output=raw")
+    res = mock_app.get("/stocks/?module_id=stocks-table&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "stocks"}
 

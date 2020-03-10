@@ -13,9 +13,11 @@ from .database import (
 from .exceptions import FlirrorConfigError, ModuleDataException
 from .helpers import make_error_handler
 from .modules.calendar import calendar_module
+from .modules.newsfeed import newsfeed_module
+from .modules.stocks import stocks_module
 from .modules.weather import weather_module
 from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
-from .views import IndexView, NewsfeedApi, StocksApi
+from .views import IndexView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
 
@@ -176,6 +178,8 @@ def create_app(config=None, jinja_options=None):
     # between modules and all can simply use the same url_rule ("/").
     app.register_module(weather_module, url_prefix="/weather")
     app.register_module(calendar_module, url_prefix="/calendar")
+    app.register_module(newsfeed_module, url_prefix="/newsfeed")
+    app.register_module(stocks_module, url_prefix="/stocks")
 
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?
@@ -206,10 +210,6 @@ def create_web(config=None, jinja_options=None):
 
     # The central index page showing all tiles
     IndexView.register_url(app)
-
-    # The modules API
-    NewsfeedApi.register_url(app)
-    StocksApi.register_url(app)
 
     # Register error handler to known status codes
     error_handler = make_error_handler()

@@ -83,7 +83,7 @@ def test_crawl_module(mock_env):
     expected_log_fragments = [
         "Initializing crawler of type 'weather' with id 'weather-frankfurt'",
         "Unable to authenticate to OWM API",
-        "Crawler 'weather-frankfurt' failed",
+        "Execution of job '{'weather-frankfurt'}' failed",
     ]
 
     for fragment in expected_log_fragments:
