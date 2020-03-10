@@ -1,10 +1,9 @@
 import abc
 from collections import defaultdict, OrderedDict
 
-from flask import abort, current_app, jsonify, make_response, render_template, request
+from flask import current_app, render_template
 from flask.views import MethodView
 
-from flirror.database import get_object_by_key
 from flirror.exceptions import ModuleDataException
 
 
@@ -68,7 +67,7 @@ class IndexView(FlirrorMethodView):
                 data = None
                 error = None
                 try:
-                    data = get_module_data(
+                    data = current_app.get_module_data(
                         module_id,
                         "raw",
                         f"modules/{module_type}.html",
@@ -102,16 +101,7 @@ class IndexView(FlirrorMethodView):
 
 class FlirrorApiView(FlirrorMethodView):
     def get(self):
-        module_id = request.args.get("module_id")
-        output = request.args.get("output")  # other: raw
-
-        try:
-            data = get_module_data(
-                module_id, output, self.template_name, self.FLIRROR_OBJECT_KEY
-            )
-            return jsonify(data)
-        except ModuleDataException as e:
-            json_abort(400, str(e))
+        return current_app.basic_get(self.template_name, self.FLIRROR_OBJECT_KEY)
 
 
 class CalendarApi(FlirrorApiView):
@@ -139,82 +129,3 @@ class StocksApi(FlirrorApiView):
     template_name = "modules/stocks.html"
 
     FLIRROR_OBJECT_KEY = "module_stocks"
-
-
-def get_module_data(module_id, output, template_name, object_key):
-    """
-    Get the data for a specific module.
-
-    This method can be used by both, views and other arbitrary code parts to
-    retrieve the data for the module specified by the function arguments.
-    """
-    # Get view specifc settings from config
-    module_config = [
-        m for m in current_app.config.get("MODULES") if m["id"] == module_id
-    ]
-
-    # TODO template/raw output?
-    if output not in ["template", "raw"]:
-        raise ModuleDataException(
-            "Missing 'output' parameter. Must be one of: ['template', 'raw']."
-        )
-
-    if module_config:
-        module_config = module_config[0]
-    else:
-        # TODO template/raw output?
-        raise ModuleDataException(
-            f"Could not find any module config for ID '{module_id}'. "
-            "Are you sure this one is specified in the config file?"
-        )
-
-    # Retrieve the data
-    db = current_app.extensions["database"]
-    data = get_object_by_key(db, f"{object_key}-{module_id}")
-
-    # Change timestamps to datetime objects
-    # TODO This should be done before storing the data, but I'm not sure
-    # how to tell Pony how to serialize the datetime to JSON
-
-    # Return the data either in raw format or as template
-    if output == "raw":
-        if data is None:
-            raise ModuleDataException(
-                f"Could not find any data for module with ID '{module_id}'. "
-                "Did the appropriate crawler run?"
-            )
-
-        return data
-
-    error = None
-    if data is None:
-        error = {
-            # TODO Which error code should we use here?
-            "code": 400,
-            "msg": (
-                f"Could not find any data for module with ID '{module_id}'. "
-                "Did the appropriate crawler run?"
-            ),
-        }
-
-    # Build template context and return template via JSON
-    context = {
-        "module": {
-            "type": module_config["type"],
-            "id": module_id,
-            "config": module_config["config"],
-            "display": module_config["display"],
-            "error": error,
-            "data": data,
-        }
-    }
-
-    template = render_template(template_name, **context)
-    return {"_template": template}
-
-
-def json_abort(status, msg=None):
-    response = {"error": status}
-    if msg is not None:
-        response["msg"] = msg
-    abort(make_response(jsonify(response), status))

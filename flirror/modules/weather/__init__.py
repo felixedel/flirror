@@ -1,15 +1,14 @@
 import logging
 import time
 
-from flask import current_app, jsonify, request
+from flask import current_app
 from pyowm import OWM
 from pyowm.exceptions.api_call_error import APIInvalidSSLCertificateError
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
 from flirror.database import store_object_by_key
-from flirror.exceptions import CrawlerDataError, ModuleDataException
+from flirror.exceptions import CrawlerDataError
 from flirror.modules import FlirrorModule
-from flirror.views import json_abort
 
 
 LOGGER = logging.getLogger(__name__)
@@ -22,16 +21,9 @@ weather_module = FlirrorModule("weather", __name__, template_folder="templates")
 
 @weather_module.route("/")
 def get():
-    module_id = request.args.get("module_id")
-    output = request.args.get("output")  # other: raw
-
-    try:
-        data = current_app.get_module_data(
-            module_id, output, "weather/index.html", FLIRROR_OBJECT_KEY
-        )
-        return jsonify(data)
-    except ModuleDataException as e:
-        json_abort(400, str(e))
+    return current_app.basic_get(
+        template_name="weather/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
+    )
 
 
 @weather_module.crawler("weather-crawler")

@@ -2,7 +2,7 @@ import logging
 import subprocess
 
 import click
-from flask import Flask, render_template
+from flask import abort, Flask, jsonify, make_response, render_template, request
 from flask_assets import Bundle, Environment
 
 from .database import create_database_and_entities, get_object_by_key
@@ -43,6 +43,26 @@ class Flirror(Flask):
         # TODO (felix): Should we add a back-reference to the app in the
         # crawler, like:
         # blueprint.register(self, options, first_registration)
+
+    def json_abort(self, status, msg=None):
+        response = {"error": status}
+        if msg is not None:
+            response["msg"] = msg
+        abort(make_response(jsonify(response), status))
+
+    def basic_get(self, template_name, flirror_object_key):
+        module_id = request.args.get("module_id")
+        # TODO (felix): Get rid of the output parameter, so that only the template
+        # version is used in all cases (initialization and reloading).
+        output = request.args.get("output")  # other: raw
+
+        try:
+            data = self.get_module_data(
+                module_id, output, template_name, flirror_object_key
+            )
+            return jsonify(data)
+        except ModuleDataException as e:
+            self.json_abort(400, str(e))
 
     def get_module_data(self, module_id, output, template_name, flirror_object_key):
         """
