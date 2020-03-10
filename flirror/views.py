@@ -104,15 +104,6 @@ class FlirrorApiView(FlirrorMethodView):
         return current_app.basic_get(self.template_name, self.FLIRROR_OBJECT_KEY)
 
 
-class CalendarApi(FlirrorApiView):
-
-    endpoint = "api-calendar"
-    rule = "/api/calendar"
-    template_name = "modules/calendar.html"
-
-    FLIRROR_OBJECT_KEY = "module_calendar"
-
-
 class NewsfeedApi(FlirrorApiView):
 
     endpoint = "api-newsfeed"
