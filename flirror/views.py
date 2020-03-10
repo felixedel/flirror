@@ -114,15 +114,6 @@ class FlirrorApiView(FlirrorMethodView):
             json_abort(400, str(e))
 
 
-class WeatherApi(FlirrorApiView):
-
-    endpoint = "api-weather"
-    rule = "/api/weather"
-    template_name = "modules/weather.html"
-
-    FLIRROR_OBJECT_KEY = "module_weather"
-
-
 class CalendarApi(FlirrorApiView):
 
     endpoint = "api-calendar"

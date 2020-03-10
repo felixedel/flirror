@@ -8,8 +8,9 @@ from flask_assets import Bundle, Environment
 from .database import create_database_and_entities
 from .exceptions import FlirrorConfigError
 from .helpers import make_error_handler
+from .modules.weather import weather_module
 from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
-from .views import CalendarApi, IndexView, NewsfeedApi, StocksApi, WeatherApi
+from .views import CalendarApi, IndexView, NewsfeedApi, StocksApi
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
 
@@ -70,6 +71,13 @@ def create_app(config=None, jinja_options=None):
 
     app.secret_key = app.config["SECRET_KEY"]
 
+    # Using the URL prefix is a good way so modules cannot conflict with each other
+    # TODO (felix): Auto look-up for modules by name and modules specified in the
+    # config file.
+    # TODO (felix): Prefix each module's URL with its name to avoid name clashes
+    # between modules and all can simply use the same url_rule ("/").
+    app.register_module(weather_module, url_prefix="/weather")
+
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?
     # Usually, it should be sufficient, when the crawler creates the database. If it
@@ -101,7 +109,6 @@ def create_web(config=None, jinja_options=None):
     IndexView.register_url(app)
 
     # The modules API
-    WeatherApi.register_url(app)
     CalendarApi.register_url(app)
     NewsfeedApi.register_url(app)
     StocksApi.register_url(app)
