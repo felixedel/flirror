@@ -1,7 +1,7 @@
 import logging
 import time
 
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 from pyowm import OWM
 from pyowm.exceptions.api_call_error import APIInvalidSSLCertificateError
 from pyowm.exceptions.api_response_error import UnauthorizedError
@@ -9,7 +9,7 @@ from pyowm.exceptions.api_response_error import UnauthorizedError
 from flirror.database import store_object_by_key
 from flirror.exceptions import CrawlerDataError, ModuleDataException
 from flirror.modules import FlirrorModule
-from flirror.views import get_module_data, json_abort
+from flirror.views import json_abort
 
 
 LOGGER = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def get():
     output = request.args.get("output")  # other: raw
 
     try:
-        data = get_module_data(
+        data = current_app.get_module_data(
             module_id, output, "weather/index.html", FLIRROR_OBJECT_KEY
         )
         return jsonify(data)

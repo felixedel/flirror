@@ -2,11 +2,11 @@ import logging
 import subprocess
 
 import click
-from flask import Flask
+from flask import Flask, render_template
 from flask_assets import Bundle, Environment
 
-from .database import create_database_and_entities
-from .exceptions import FlirrorConfigError
+from .database import create_database_and_entities, get_object_by_key
+from .exceptions import FlirrorConfigError, ModuleDataException
 from .helpers import make_error_handler
 from .modules.weather import weather_module
 from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
@@ -43,6 +43,75 @@ class Flirror(Flask):
         # TODO (felix): Should we add a back-reference to the app in the
         # crawler, like:
         # blueprint.register(self, options, first_registration)
+
+    def get_module_data(self, module_id, output, template_name, flirror_object_key):
+        """
+        Get the data for a specific module.
+        This method can be used by both, views and other arbitrary code parts to
+        retrieve the data for the module specified by the function arguments.
+        """
+
+        object_key = f"{flirror_object_key}-{module_id}"
+        # Get view specifc settings from config
+        module_config = [m for m in self.config.get("MODULES") if m["id"] == module_id]
+
+        # TODO template/raw output?
+        if output not in ["template", "raw"]:
+            raise ModuleDataException(
+                "Missing 'output' parameter. Must be one of: ['template', 'raw']."
+            )
+
+        if module_config:
+            module_config = module_config[0]
+        else:
+            # TODO template/raw output?
+            raise ModuleDataException(
+                f"Could not find any module config for ID '{module_id}'. "
+                "Are you sure this one is specified in the config file?"
+            )
+
+        # Retrieve the data
+        data = get_object_by_key(self.extensions["database"], object_key)
+
+        # Change timestamps to datetime objects
+        # TODO This should be done before storing the data, but I'm not sure
+        # how to tell Pony how to serialize the datetime to JSON
+
+        # Return the data either in raw format or as template
+        if output == "raw":
+            if data is None:
+                raise ModuleDataException(
+                    f"Could not find any data for module with ID '{module_id}'. "
+                    "Did the appropriate crawler run?"
+                )
+
+            return data
+
+        error = None
+        if data is None:
+            error = {
+                # TODO Which error code should we use here?
+                "code": 400,
+                "msg": (
+                    f"Could not find any data for module with ID '{module_id}'. "
+                    "Did the appropriate crawler run?"
+                ),
+            }
+
+        # Build template context and return template via JSON
+        context = {
+            "module": {
+                "type": module_config["type"],
+                "id": module_id,
+                "config": module_config["config"],
+                "display": module_config["display"],
+                "error": error,
+                "data": data,
+            }
+        }
+
+        template = render_template(template_name, **context)
+        return {"_template": template}
 
 
 def create_app(config=None, jinja_options=None):
