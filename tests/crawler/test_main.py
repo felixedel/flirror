@@ -10,8 +10,9 @@ def test_main_missing_envvar():
     result = runner.invoke(main)
     assert result.exit_code == 1
     assert (
-        "Unable to load configuration. The environment variable "
-        "'FLIRROR_SETTINGS' is not set." in result.stdout
+        "The environment variable 'FLIRROR_SETTINGS' is not set and as such "
+        "configuration could not be loaded.  Set this variable and make it point "
+        "to a configuration file" in str(result.exception)
     )
 
 
@@ -21,8 +22,8 @@ def test_main_missing_config(monkeypatch):
     result = runner.invoke(main)
     assert result.exit_code == 1
     assert (
-        "The config file '/invalid/config/path' set in 'FLIRROR_SETTINGS' "
-        "environment variable does not exist." in result.stdout
+        " Unable to load configuration file (No such file or directory): "
+        "'/invalid/config/path'" in str(result.exception)
     )
 
 

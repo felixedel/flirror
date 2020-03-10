@@ -49,31 +49,29 @@ class SafeScheduler(Scheduler):
             job.last_run = datetime.now()
             job._schedule_next_run()
 
-    def add_job(self, crawler):
+    def add_job(self, job_func, job_id, interval_string):
         # Get interval from crawler config, parse it and call appropriate methods
         # in the schedule module
 
-        interval, unit = parse_interval_string(crawler.interval)
+        interval, unit = parse_interval_string(interval_string)
         LOGGER.info(
-            "Adding job for crawler '%s' with interval '%s'",
-            crawler.id,
-            crawler.interval,
+            "Adding job for crawler '%s' with interval '%s'", job_id, interval_string
         )
         unit_method = INTERVAL_METHODS.get(unit)
         if unit_method is None:
             LOGGER.error(
                 "Invalid interval '%s'. Could not find appropriate scheduling "
                 "method.",
-                crawler.interval,
+                interval_string,
             )
             return
 
-        self._add_job(interval, unit_method, crawler.id, crawler.crawl)
+        self._add_job(interval, unit_method, job_id, job_func)
 
-    def _add_job(self, interval, unit_method_name, job_name, job_to_execute):
+    def _add_job(self, interval, unit_method_name, job_id, job_func):
         job = self.every(interval)
         # Add the job to the schedule
-        getattr(job, unit_method_name).do(job_to_execute).tag(job_name)
+        getattr(job, unit_method_name).do(job_func).tag(job_id)
 
     def start(self):
         LOGGER.info("Starting scheduler")

@@ -1,12 +1,11 @@
+import functools
 import logging
 import os
 
 import click
 
 from flirror import create_app
-from flirror.crawler.crawlers import CrawlerFactory
 from flirror.crawler.scheduling import SafeScheduler
-from flirror.exceptions import CrawlerConfigError, CrawlerDataError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -67,9 +66,6 @@ def crawl(ctx, module, periodic):
 
     app = ctx.obj["app"]
 
-    # Create the crawler factory to use for initializing new crawlers
-    factory = CrawlerFactory()
-
     config_modules = app.config.get("MODULES", [])
 
     if module:
@@ -90,7 +86,7 @@ def crawl(ctx, module, periodic):
             "No modules specified in config file. Nothing to run."
         )
 
-    crawlers = []
+    scheduler = SafeScheduler()
     # Look up crawlers from config file
     for crawler_config in crawler_configs:
         crawler_id = crawler_config.get("id")
@@ -100,37 +96,32 @@ def crawl(ctx, module, periodic):
             "Initializing crawler of type '%s' with id '%s'", crawler_type, crawler_id
         )
 
-        # Initialize the crawler
-        try:
-            crawler_cls = factory.get_crawler(crawler_type)
-        except CrawlerConfigError:
-            LOGGER.exception(
-                "Could not initialize crawler '%s'. Skipping this crawler.", crawler_id
+        # Get crawler callable from module
+        crawler_callable = app.crawlers.get(crawler_type)
+        if crawler_callable is None:
+            LOGGER.warning(
+                "Could not find appropriate crawler callable for '%s'. "
+                "Skipping this crawler",
+                crawler_type,
             )
             continue
-        interval = crawler_config.get("crawler", {}).get("interval")
-        crawler = crawler_cls(
+
+        # Create a copy of the function with prefilled arguments (id, config values)
+        func = functools.partial(
+            crawler_callable,
             crawler_id=crawler_id,
             database=app.extensions["database"],
             **crawler_config["config"],
-            interval=interval,
         )
-        crawlers.append(crawler)
+
+        interval_string = crawler_config.get("crawler", {}).get("interval", "5m")
+        scheduler.add_job(func, crawler_id, interval_string)
 
     # Do the actual crawling - periodically or not
     if periodic:
-        scheduler = SafeScheduler()
-        for crawler in crawlers:
-            scheduler.add_job(crawler)
-
-        # Finally, start the scheduler
         scheduler.start()
     else:
-        for crawler in crawlers:
-            try:
-                crawler.crawl()
-            except CrawlerDataError as e:
-                LOGGER.error("Crawler '%s' failed: '%s'", crawler.id, str(e))
+        scheduler.run_all()
 
 
 if __name__ == "__main__":
