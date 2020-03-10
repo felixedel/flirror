@@ -108,10 +108,7 @@ def crawl(ctx, module, periodic):
 
         # Create a copy of the function with prefilled arguments (id, config values)
         func = functools.partial(
-            crawler_callable,
-            crawler_id=crawler_id,
-            database=app.extensions["database"],
-            **crawler_config["config"],
+            crawler_callable, crawler_id=crawler_id, app=app, **crawler_config["config"]
         )
 
         interval_string = crawler_config.get("crawler", {}).get("interval", "5m")

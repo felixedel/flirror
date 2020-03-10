@@ -6,13 +6,16 @@ from pyowm import OWM
 from pyowm.exceptions.api_call_error import APIInvalidSSLCertificateError
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
-from flirror.database import store_object_by_key
 from flirror.exceptions import CrawlerDataError
 from flirror.modules import FlirrorModule
 
 
 LOGGER = logging.getLogger(__name__)
 
+# TODO (felix): Maybe we should simply use the module's name (maybe even
+# __name__) instead of FLIRROR_OBJECT_KEY. Specifying a value for this only
+# makes sense in case we have multiple objects per module to be stored
+# independently of each other.
 FLIRROR_OBJECT_KEY = "module_weather"
 
 # TODO (felix): Define some default values in FlirrorModule?
@@ -27,14 +30,14 @@ def get():
 
 
 @weather_module.crawler("weather-crawler")
-def crawl(crawler_id, database, api_key, language, city, temp_unit):
-    WeatherCrawler(crawler_id, database, api_key, language, city, temp_unit).crawl()
+def crawl(crawler_id, app, api_key, language, city, temp_unit):
+    WeatherCrawler(crawler_id, app, api_key, language, city, temp_unit).crawl()
 
 
 class WeatherCrawler:
-    def __init__(self, crawler_id, database, api_key, language, city, temp_unit):
+    def __init__(self, crawler_id, app, api_key, language, city, temp_unit):
         self.crawler_id = crawler_id
-        self.database = database
+        self.app = app
         self.api_key = api_key
         self.language = language
         self.city = city
@@ -70,7 +73,7 @@ class WeatherCrawler:
         # Store the crawl timestamp
         weather_data["_timestamp"] = now
 
-        store_object_by_key(self.database, key=self.object_key, value=weather_data)
+        self.app.store_module_data(self.crawler_id, FLIRROR_OBJECT_KEY, weather_data)
 
     @property
     def owm(self):

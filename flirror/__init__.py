@@ -5,7 +5,11 @@ import click
 from flask import abort, Flask, jsonify, make_response, render_template, request
 from flask_assets import Bundle, Environment
 
-from .database import create_database_and_entities, get_object_by_key
+from .database import (
+    create_database_and_entities,
+    get_object_by_key,
+    store_object_by_key,
+)
 from .exceptions import FlirrorConfigError, ModuleDataException
 from .helpers import make_error_handler
 from .modules.weather import weather_module
@@ -63,6 +67,10 @@ class Flirror(Flask):
             return jsonify(data)
         except ModuleDataException as e:
             self.json_abort(400, str(e))
+
+    def store_module_data(self, module_id, flirror_object_key, data):
+        object_key = f"{flirror_object_key}-{module_id}"
+        store_object_by_key(self.extensions["database"], object_key, data)
 
     def get_module_data(self, module_id, output, template_name, flirror_object_key):
         """
@@ -170,7 +178,7 @@ def create_app(config=None, jinja_options=None):
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?
     # Usually, it should be sufficient, when the crawler creates the database. If it
-    # is not created here, we should just provide somee message to start the crawler.
+    # is not created here, we should just provide some message to start the crawler.
     db = create_database_and_entities(
         provider="sqlite", filename=app.config["DATABASE_FILE"], create_db=True
     )
