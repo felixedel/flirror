@@ -19,13 +19,9 @@
                     <div class="carousel-inner">
                         {% for module in modules %}
                         <div class="carousel-item {% if loop.first %}active{% endif %}" data-interval="{{ module.display.get('time', 5000) }}">
-                            <div id="{{ module.id }}" class="card dark">
-                            {% include "modules/" + module.type + ".html" ignore missing %}
-                            </div>
-                            {# TODO Find a better condition - pure JS/CSS modules don't need ajax here #}
-                            {% if module.type != "clock" %}
-                                {% include "ajax.html" %}
-                            {% endif %}
+                            {# Define the modules container so it can be reloaded via ajax #}
+                            <div id="{{ module.id }}" class="card dark"></div>
+                            {% include "ajax.html" %}
                         </div>
                         {% endfor %}
                     </div>
@@ -34,13 +30,9 @@
             {% else %}
                 {% for module in modules %}
                 <div class="col-6 align-items-stretch">
-                    <div id="{{ module.id }}" class="card dark">
-                    {% include "modules/" + module.type + ".html" ignore missing %}
-                    </div>
-                    {# TODO Find a better condition - pure JS/CSS modules don't need ajax here #}
-                    {% if module.type != "clock" %}
-                        {% include "ajax.html" %}
-                    {% endif %}
+                    {# Define the modules container so it can be reloaded via ajax #}
+                    <div id="{{ module.id }}" class="card dark"></div>
+                    {% include "ajax.html" %}
                 </div>
                 {% endfor %}
             {% endif %}

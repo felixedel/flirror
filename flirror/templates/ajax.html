@@ -12,7 +12,9 @@
         $.ajax({
             // TODO Set timeout?
             type: 'GET',
-            url: '{{ url_for("api-" + module.type, _external=True) }}',
+            // TODO (felix): Is there a way to automatically look up the endpoint
+            // independent of the method's name (with that it always must be get)
+            url: '{{ url_for("{}.get".format(module.type), _external=True) }}',
             data: {{ {"module_id": module.id, "output": "template"} | safe }},
             success: function (response) {
                 // TODO Remove debug output

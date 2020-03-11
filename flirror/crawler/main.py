@@ -1,15 +1,11 @@
+import functools
 import logging
 import os
-from pathlib import Path
 
 import click
-from flask.config import Config
 
-from flirror import FLIRROR_SETTINGS_ENV
-from flirror.crawler.crawlers import CrawlerFactory
+from flirror import create_app
 from flirror.crawler.scheduling import SafeScheduler
-from flirror.database import create_database_and_entities
-from flirror.exceptions import CrawlerConfigError, CrawlerDataError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,33 +42,10 @@ def configure_logger(verbosity):
 def main(ctx, verbosity):
     configure_logger(verbosity)
 
-    # Load the configurations from file
-    config = Config(root_path=".")
-    # TODO Add default settings, once we have some
-    # config.from_object(default_settings)
+    app = create_app()
 
-    if not os.environ.get(FLIRROR_SETTINGS_ENV):
-        raise click.ClickException(
-            "Unable to load configuration. The environment variable 'FLIRROR_SETTINGS' "
-            "is not set. Please set this variable and make it point to a configuration "
-            "file."
-        )
-
-    # Validate that the path exist for a nicer error message.
-    # Otherwise, we will only get a FileNotFoundError() when the config.from_envvar fails.
-    config_path = Path(os.environ[FLIRROR_SETTINGS_ENV])
-    if not config_path.exists():
-        raise click.ClickException(
-            f"The config file '{config_path}' set in 'FLIRROR_SETTINGS' environment "
-            "variable does not exist. Please make this variable point to an existing "
-            "configuration file."
-        )
-
-    config.from_envvar(FLIRROR_SETTINGS_ENV)
-
-    # TODO Validate config?
     # Store everything in click's context object to be available for subcommands
-    ctx.obj = {"config": config}
+    ctx.obj = {"app": app}
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(crawl)
@@ -91,17 +64,9 @@ def main(ctx, verbosity):
 def crawl(ctx, module, periodic):
     LOGGER.info("Hello, Flirror!")
 
-    config = ctx.obj["config"]
+    app = ctx.obj["app"]
 
-    # Connect to the sqlite database
-    db = create_database_and_entities(
-        provider="sqlite", filename=config["DATABASE_FILE"], create_db=True
-    )
-
-    # Create the crawler factory to use for initializing new crawlers
-    factory = CrawlerFactory()
-
-    config_modules = config.get("MODULES", [])
+    config_modules = app.config.get("MODULES", [])
 
     if module:
         # Filter crawlers for provided module IDs
@@ -121,7 +86,7 @@ def crawl(ctx, module, periodic):
             "No modules specified in config file. Nothing to run."
         )
 
-    crawlers = []
+    scheduler = SafeScheduler()
     # Look up crawlers from config file
     for crawler_config in crawler_configs:
         crawler_id = crawler_config.get("id")
@@ -131,37 +96,34 @@ def crawl(ctx, module, periodic):
             "Initializing crawler of type '%s' with id '%s'", crawler_type, crawler_id
         )
 
-        # Initialize the crawler
-        try:
-            crawler_cls = factory.get_crawler(crawler_type)
-        except CrawlerConfigError:
-            LOGGER.exception(
-                "Could not initialize crawler '%s'. Skipping this crawler.", crawler_id
+        # Get crawler callable from module
+        crawler_module = app.modules.get(crawler_type)
+        if not crawler_module:
+            LOGGER.warning(
+                "Could not find any registered module '%s'. Skipping this crawler.",
+                crawler_type,
             )
             continue
-        interval = crawler_config.get("crawler", {}).get("interval")
-        crawler = crawler_cls(
-            crawler_id=crawler_id,
-            database=db,
-            **crawler_config["config"],
-            interval=interval,
+        crawler_callable = crawler_module._crawler
+        if not crawler_callable:
+            LOGGER.warning(
+                "Module '%s' does not provide any crawler. Skipping.", crawler_type
+            )
+            continue
+
+        # Create a copy of the function with prefilled arguments (id, config values)
+        func = functools.partial(
+            crawler_callable, crawler_id=crawler_id, app=app, **crawler_config["config"]
         )
-        crawlers.append(crawler)
+
+        interval_string = crawler_config.get("crawler", {}).get("interval", "5m")
+        scheduler.add_job(func, crawler_id, interval_string)
 
     # Do the actual crawling - periodically or not
     if periodic:
-        scheduler = SafeScheduler()
-        for crawler in crawlers:
-            scheduler.add_job(crawler)
-
-        # Finally, start the scheduler
         scheduler.start()
     else:
-        for crawler in crawlers:
-            try:
-                crawler.crawl()
-            except CrawlerDataError as e:
-                LOGGER.error("Crawler '%s' failed: '%s'", crawler.id, str(e))
+        scheduler.run_all()
 
 
 if __name__ == "__main__":

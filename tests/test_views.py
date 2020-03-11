@@ -8,7 +8,7 @@ def test_template_invalid(mock_app):
     # In that case, the mocked flask app will raise an exception (if a undefined variable
     # is used within a template).
     with pytest.raises(UndefinedError) as excinfo:
-        mock_app.get("/api/weather?module_id=weather-hamburg&output=template")
+        mock_app.get("/weather/?module_id=weather-hamburg&output=template")
 
     # City is the first variable that is used within the template
     assert "Variable 'city' is not defined" == str(excinfo.value)
@@ -23,7 +23,7 @@ def test_weather_api_template(mock_app):
     # In case the database contains to less or inconsistent data, the template rendering
     # will fail.
 
-    res = mock_app.get("/api/weather?module_id=weather-frankfurt&output=template")
+    res = mock_app.get("/weather/?module_id=weather-frankfurt&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
@@ -31,7 +31,7 @@ def test_weather_api_template(mock_app):
 def test_weather_api_raw(mock_app):
     # For the raw API tests it should be sufficient to check if all expected keys are
     # present in the JSON response.
-    res = mock_app.get("/api/weather?module_id=weather-frankfurt&output=raw")
+    res = mock_app.get("/weather/?module_id=weather-frankfurt&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {
         "_timestamp",
@@ -61,21 +61,19 @@ def test_weather_api_raw(mock_app):
 
 
 def test_calendar_api_template(mock_app):
-    res = mock_app.get("/api/calendar?module_id=calendar-my&output=template")
+    res = mock_app.get("/calendar/?module_id=calendar-my&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_calendar_api_authentication_template(mock_app):
-    res = mock_app.get(
-        "/api/calendar?module_id=calendar-authentication&output=template"
-    )
+    res = mock_app.get("/calendar/?module_id=calendar-authentication&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_calendar_api_raw(mock_app):
-    res = mock_app.get("/api/calendar?module_id=calendar-my&output=raw")
+    res = mock_app.get("/calendar/?module_id=calendar-my&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "events"}
 
@@ -91,13 +89,13 @@ def test_calendar_api_raw(mock_app):
 
 
 def test_newsfeed_api_template(mock_app):
-    res = mock_app.get("/api/newsfeed?module_id=news-tagesschau&output=template")
+    res = mock_app.get("/newsfeed/?module_id=news-tagesschau&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_newsfeed_api_raw(mock_app):
-    res = mock_app.get("/api/newsfeed?module_id=news-tagesschau&output=raw")
+    res = mock_app.get("/newsfeed/?module_id=news-tagesschau&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "news"}
 
@@ -107,13 +105,13 @@ def test_newsfeed_api_raw(mock_app):
 
 
 def test_stocks_api_template_series(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-series&output=template")
+    res = mock_app.get("/stocks/?module_id=stocks-series&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_stocks_api_raw_series(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-series&output=raw")
+    res = mock_app.get("/stocks/?module_id=stocks-series&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "stocks"}
 
@@ -127,13 +125,13 @@ def test_stocks_api_raw_series(mock_app):
 
 
 def test_stocks_api_template_table(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-table&output=template")
+    res = mock_app.get("/stocks/?module_id=stocks-table&output=template")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_template"}
 
 
 def test_stocks_api_raw_table(mock_app):
-    res = mock_app.get("/api/stocks?module_id=stocks-table&output=raw")
+    res = mock_app.get("/stocks/?module_id=stocks-table&output=raw")
     assert res.status_code == 200
     assert set(res.json.keys()) == {"_timestamp", "stocks"}
 
@@ -149,7 +147,7 @@ def test_invalid_api(mock_app):
 
 
 def test_api_missing_parameter(mock_app):
-    res = mock_app.get(f"/api/weather?module_id=some-module")
+    res = mock_app.get(f"/weather/?module_id=some-module")
     assert res.status_code == 400
     assert res.json == {
         "error": 400,
@@ -158,7 +156,7 @@ def test_api_missing_parameter(mock_app):
 
 
 def test_api_invalid_module_id(mock_app):
-    res = mock_app.get(f"/api/weather?module_id=invalid-module&output=raw")
+    res = mock_app.get(f"/weather/?module_id=invalid-module&output=raw")
     assert res.status_code == 400
     assert res.json == {
         "error": 400,

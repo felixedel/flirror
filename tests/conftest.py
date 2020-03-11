@@ -5,7 +5,7 @@ from jinja2 import Undefined
 from jinja2.exceptions import UndefinedError
 from pony.orm import db_session
 
-from flirror import create_app
+from flirror import create_web
 from flirror.database import create_database_and_entities
 
 FIXTURE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata")
@@ -323,7 +323,7 @@ def mock_app(mock_env, tmpdir_factory):
     # Overwrite the jinja options to make template rendering fail on undefined variables
     jinja_options = {"undefined": ExceptionUndefined}
 
-    app = create_app(config, jinja_options)
+    app = create_web(config, jinja_options)
     app.debug = True
 
     # Populate the database with mocked values (similar to what the run-backstop.py
