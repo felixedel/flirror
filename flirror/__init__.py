@@ -17,7 +17,7 @@ from .modules.clock import clock_module
 from .modules.newsfeed import newsfeed_module
 from .modules.stocks import stocks_module
 from .modules.weather import weather_module
-from .utils import clean_string, format_time, list_filter, prettydate, weather_icon
+from .utils import clean_string, format_time, prettydate
 from .views import IndexView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -222,10 +222,8 @@ def create_web(config=None, jinja_options=None):
     app.register_error_handler(404, error_handler)
 
     # Add custom Jinja2 template filters
-    app.add_template_filter(weather_icon)
     app.add_template_filter(prettydate)
     app.add_template_filter(format_time)
-    app.add_template_filter(list_filter)
     app.add_template_filter(clean_string)
 
     # Initialize webassets to work with SCSS files
