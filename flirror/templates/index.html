@@ -20,17 +20,8 @@
                         {% for module in modules %}
                         <div class="carousel-item {% if loop.first %}active{% endif %}" data-interval="{{ module.display.get('time', 5000) }}">
                             {# Define the modules container so it can be reloaded via ajax #}
-                            <div id="{{ module.id }}" class="card dark">
-                                {# The clock module is kind of a special thing. Not sure how to make
-                                   it work with the new plugin mechanism.#}
-                                {% if module.type == "clock" %}
-                                    {% include "modules/" + module.type + ".html" %}
-                                {% endif %}
-                            </div>
-                            {# TODO Find a better condition - pure JS/CSS modules don't need ajax here #}
-                            {% if module.type != "clock" %}
-                                {% include "ajax.html" %}
-                            {% endif %}
+                            <div id="{{ module.id }}" class="card dark"></div>
+                            {% include "ajax.html" %}
                         </div>
                         {% endfor %}
                     </div>
@@ -40,17 +31,8 @@
                 {% for module in modules %}
                 <div class="col-6 align-items-stretch">
                     {# Define the modules container so it can be reloaded via ajax #}
-                    <div id="{{ module.id }}" class="card dark">
-                        {# The clock module is kind of a special thing. Not sure how to make
-                            it work with the new plugin mechanism.#}
-                        {% if module.type == "clock" %}
-                            {% include "modules/" + module.type + ".html" %}
-                        {% endif %}
-                    </div>
-                    {# TODO Find a better condition - pure JS/CSS modules don't need ajax here #}
-                    {% if module.type != "clock" %}
-                        {% include "ajax.html" %}
-                    {% endif %}
+                    <div id="{{ module.id }}" class="card dark"></div>
+                    {% include "ajax.html" %}
                 </div>
                 {% endfor %}
             {% endif %}

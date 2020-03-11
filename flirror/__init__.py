@@ -13,6 +13,7 @@ from .database import (
 from .exceptions import FlirrorConfigError, ModuleDataException
 from .helpers import make_error_handler
 from .modules.calendar import calendar_module
+from .modules.clock import clock_module
 from .modules.newsfeed import newsfeed_module
 from .modules.stocks import stocks_module
 from .modules.weather import weather_module
@@ -132,6 +133,8 @@ class Flirror(Flask):
         # Build template context and return template via JSON
         context = {
             "module": {
+                # TODO (felix): Is the type still needed here? We shouldn't do
+                # any further lookup on that.
                 "type": module_config["type"],
                 "id": module_id,
                 "config": module_config["config"],
@@ -176,6 +179,7 @@ def create_app(config=None, jinja_options=None):
     # config file.
     # TODO (felix): Prefix each module's URL with its name to avoid name clashes
     # between modules and all can simply use the same url_rule ("/").
+    app.register_module(clock_module, url_prefix="/clock")
     app.register_module(weather_module, url_prefix="/weather")
     app.register_module(calendar_module, url_prefix="/calendar")
     app.register_module(newsfeed_module, url_prefix="/newsfeed")
