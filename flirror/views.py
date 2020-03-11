@@ -4,8 +4,6 @@ from collections import defaultdict, OrderedDict
 from flask import current_app, render_template
 from flask.views import MethodView
 
-from flirror.exceptions import ModuleDataException
-
 
 class FlirrorMethodView(MethodView):
     @property

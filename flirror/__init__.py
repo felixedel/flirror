@@ -44,23 +44,13 @@ class Flirror(Flask):
         # blueprint.register(self, options, first_registration)
         # https://github.com/pallets/flask/blob/master/src/flask/blueprints.py#L233
 
-    def json_abort(self, status, msg=None):
-        response = {"error": status}
-        if msg is not None:
-            response["msg"] = msg
-        abort(make_response(jsonify(response), status))
-
     def basic_get(self, template_name, flirror_object_key):
         module_id = request.args.get("module_id")
-        # TODO (felix): Get rid of the output parameter, so that only the template
-        # version is used in all cases (initialization and reloading).
-        output = request.args.get("output")  # other: raw
-
         try:
-            data = self.get_module_data(
-                module_id, output, template_name, flirror_object_key
+            template = self.get_module_template(
+                module_id, template_name, flirror_object_key
             )
-            return jsonify(data)
+            return jsonify({"_template": template})
         except ModuleDataException as e:
             self.json_abort(400, str(e))
 
@@ -68,7 +58,7 @@ class Flirror(Flask):
         object_key = f"{flirror_object_key}-{module_id}"
         store_object_by_key(self.extensions["database"], object_key, data)
 
-    def get_module_data(self, module_id, output, template_name, flirror_object_key):
+    def get_module_data(self, module_id, flirror_object_key):
         """
         Get the data for a specific module.
         This method can be used by both, views and other arbitrary code parts to
@@ -76,14 +66,17 @@ class Flirror(Flask):
         """
 
         object_key = f"{flirror_object_key}-{module_id}"
+        return get_object_by_key(self.extensions["database"], object_key)
+
+    def get_module_template(self, module_id, template_name, flirror_object_key):
+        data = self.get_module_data(module_id, flirror_object_key)
+        context = self.get_template_context(module_id, data)
+
+        return render_template(template_name, **context)
+
+    def get_template_context(self, module_id, data):
         # Get view specifc settings from config
         module_config = [m for m in self.config.get("MODULES") if m["id"] == module_id]
-
-        # TODO template/raw output?
-        if output not in ["template", "raw"]:
-            raise ModuleDataException(
-                "Missing 'output' parameter. Must be one of: ['template', 'raw']."
-            )
 
         if module_config:
             module_config = module_config[0]
@@ -94,22 +87,9 @@ class Flirror(Flask):
                 "Are you sure this one is specified in the config file?"
             )
 
-        # Retrieve the data
-        data = get_object_by_key(self.extensions["database"], object_key)
-
         # Change timestamps to datetime objects
         # TODO This should be done before storing the data, but I'm not sure
         # how to tell Pony how to serialize the datetime to JSON
-
-        # Return the data either in raw format or as template
-        if output == "raw":
-            if data is None:
-                raise ModuleDataException(
-                    f"Could not find any data for module with ID '{module_id}'. "
-                    "Did the appropriate crawler run?"
-                )
-
-            return data
 
         error = None
         if data is None:
@@ -135,9 +115,13 @@ class Flirror(Flask):
                 "data": data,
             }
         }
+        return context
 
-        template = render_template(template_name, **context)
-        return {"_template": template}
+    def json_abort(self, status, msg=None):
+        response = {"error": status}
+        if msg is not None:
+            response["msg"] = msg
+        abort(make_response(jsonify(response), status))
 
 
 def create_app(config=None, jinja_options=None):
