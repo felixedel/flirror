@@ -10,7 +10,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - FLASK_APP=flirror
+      - FLASK_APP=flirror:create_web
       - FLIRROR_SETTINGS=/src/tests/testdata/test-settings.cfg
       - TEST_DB_SCRIPT=/src/tests/testdata/database-dump.sql
     volumes:
@@ -28,7 +28,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - FLASK_APP=flirror
+      - FLASK_APP=flirror:create_web
       - FLIRROR_SETTINGS=/src/tests/testdata/test-settings.cfg
       - TEST_DB_SCRIPT=/src/tests/testdata/database-dump.sql
     volumes:
