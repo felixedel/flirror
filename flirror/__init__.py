@@ -10,7 +10,7 @@ from .database import (
     get_object_by_key,
     store_object_by_key,
 )
-from .exceptions import FlirrorConfigError, ModuleDataException
+from .exceptions import ModuleDataException
 from .helpers import make_error_handler
 from .modules.calendar import calendar_module
 from .modules.clock import clock_module
@@ -26,31 +26,23 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Flirror(Flask):
-
-    crawlers = {}
+    @property
+    def modules(self):
+        """
+        For convenience, so we don't have to access the blueprints attribute
+        when dealing with modules.
+        """
+        return self.blueprints
 
     def register_module(self, module, **options):
-        LOGGER.info("Register module %s", module.name)
+        LOGGER.info("Register module '%s'", module.name)
         self.register_blueprint(module, **options)
-        self.register_crawler(module)
 
-    def register_crawler(self, module):
-        LOGGER.debug(
-            "Register crawler %s for module '%s'", module._crawler, module.name
-        )
-        if (
-            module.name in self.crawlers
-            and self.crawlers[module.name] is not module._crawler
-        ):
-            raise FlirrorConfigError(
-                f"A different module with the specified name '{module.name}' was "
-                "already loaded."
-            )
-        self.crawlers[module.name] = module._crawler
-
-        # TODO (felix): Should we add a back-reference to the app in the
-        # crawler, like:
+        # TODO (felix): If we want to register something beyond Flask's
+        # blueprint capabilities, we could add a back-reference to the app in
+        # the module class and call something like:
         # blueprint.register(self, options, first_registration)
+        # https://github.com/pallets/flask/blob/master/src/flask/blueprints.py#L233
 
     def json_abort(self, status, msg=None):
         response = {"error": status}
@@ -176,7 +168,8 @@ def create_app(config=None, jinja_options=None):
 
     # Using the URL prefix is a good way so modules cannot conflict with each other
     # TODO (felix): Auto look-up for modules by name and modules specified in the
-    # config file.
+    # config file or something like
+    # https://packaging.python.org/guides/creating-and-discovering-plugins/
     # TODO (felix): Prefix each module's URL with its name to avoid name clashes
     # between modules and all can simply use the same url_rule ("/").
     app.register_module(clock_module, url_prefix="/clock")
@@ -194,7 +187,6 @@ def create_app(config=None, jinja_options=None):
     )
 
     # Store the dabase connection in flask's extensions dictionary.
-    # TODO (felix): Is there a better place to store it?
     if not hasattr(app, "extensions"):
         app.extensions = {}
     if "database" not in app.extensions:

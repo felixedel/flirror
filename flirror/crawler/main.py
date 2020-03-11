@@ -97,12 +97,17 @@ def crawl(ctx, module, periodic):
         )
 
         # Get crawler callable from module
-        crawler_callable = app.crawlers.get(crawler_type)
-        if crawler_callable is None:
+        crawler_module = app.modules.get(crawler_type)
+        if not crawler_module:
             LOGGER.warning(
-                "Could not find appropriate crawler callable for '%s'. "
-                "Skipping this crawler",
+                "Could not find any registered module '%s'. Skipping this crawler.",
                 crawler_type,
+            )
+            continue
+        crawler_callable = crawler_module._crawler
+        if not crawler_callable:
+            LOGGER.warning(
+                "Module '%s' does not provide any crawler. Skipping.", crawler_type
             )
             continue
 
