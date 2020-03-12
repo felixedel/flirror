@@ -4,8 +4,6 @@ from collections import defaultdict, OrderedDict
 from flask import current_app, render_template
 from flask.views import MethodView
 
-from flirror.exceptions import ModuleDataException
-
 
 class FlirrorMethodView(MethodView):
     @property
@@ -44,9 +42,9 @@ class IndexView(FlirrorMethodView):
     template_name = "index.html"
 
     def get(self):
-
-        # The dictionary holding all necessary context data for the index template
-        # Here we have also place for overall meta data (like flirror version or so)
+        # The dictionary holding all necessary context data for the index
+        # template. Here we have also place for overall meta data (like flirror
+        # version or so).
         ctx_data = {"modules": defaultdict(list)}
 
         config_modules = current_app.config.get("MODULES", [])
@@ -63,35 +61,15 @@ class IndexView(FlirrorMethodView):
                 module_type = module_config.get("type")
                 # TODO Error handling for wrong/missing keys
 
-                res = None
-                data = None
-                error = None
-                try:
-                    data = current_app.get_module_data(
-                        module_id,
-                        "raw",
-                        f"modules/{module_type}.html",
-                        f"module_{module_type}",
-                    )
-                except ModuleDataException as e:
-                    msg = str(e)
-                    # If we got a better message from the e.g. JSON API, we use it instead
-                    if data is not None and "error" in data:
-                        msg = data["msg"]
-
-                    code = 500  # TODO Dump default
-                    if res is not None:
-                        code = res.status_code
-                    error = {"code": code, "msg": msg}
-
+                # NOTE (felix): The index view will only ensure that the
+                # modules are positioned properly. The content of each tile
+                # will be loaded asynchronously via ajax.
                 ctx_data["modules"][position].append(
                     {
-                        "type": module_type,
                         "id": module_id,
+                        "type": module_type,
                         "config": module_config["config"],
                         "display": module_config["display"],
-                        "data": data,
-                        "error": error,
                     }
                 )
 
