@@ -3,7 +3,8 @@ from datetime import datetime
 import pytest
 from freezegun import freeze_time
 
-from flirror.utils import parse_interval_string, prettydate
+from flirror.modules import FlirrorModule
+from flirror.utils import discover_flirror_modules, parse_interval_string, prettydate
 
 
 @pytest.mark.parametrize(
@@ -44,3 +45,50 @@ def test_prettydate(date, expected):
     date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")  # .replace(tzinfo=timezone.utc)
     with freeze_time("2018-09-17 10:15:04"):
         assert expected == prettydate(date)
+
+
+def test_discover_flirror_modules():
+    module_1 = FlirrorModule("module_1", __name__)
+    module_2 = FlirrorModule("module_2", __name__)
+    module_3 = FlirrorModule("module_3", __name__)
+
+    # As we are mainly relying on the functionality of getattr(), we could mock
+    # a plugin module with a simple class providing the necessary attributes.
+    class valid_plugin:
+        FLIRROR_MODULE = module_1
+        FLIRROR_MODULES = [module_2, module_3]
+
+    flirror_modules = discover_flirror_modules({"valid_plugin": valid_plugin})
+
+    # We assume that all modules are valid modules because they are all
+    # instances of FlirrorModule.
+    assert len(flirror_modules) == 3
+    assert flirror_modules == [module_1, module_2, module_3]
+
+
+def test_discover_flirror_modules_missing_variables():
+    class invalid_plugin:
+        some_variable = "abc"
+        NO_FLIRROR_MODULE = 5
+
+    flirror_modules = discover_flirror_modules({"invalid_plugin": invalid_plugin})
+
+    # As the module does not provide the necessary variables, no modules could
+    # be loaded.
+    assert flirror_modules == []
+
+
+def test_discover_flirror_modules_wrong_values():
+    module_1 = FlirrorModule("module_1", __name__)
+    module_2 = FlirrorModule("module_2", __name__)
+
+    class invalid_plugin:
+        FLIRROR_MODULE = [module_1]
+        FLIRROR_MODULES = [5, module_2, "abc"]
+
+    flirror_modules = discover_flirror_modules({"invalid_plugin": invalid_plugin})
+
+    # FLIRROR_MODULE cannot be loaded as it does not provide a single element.
+    # FLIRROR_MODULES contains some invalid module (not instance of
+    # FlirrorModule). Thus, only module_2 is discovered in the end.
+    assert flirror_modules == [module_2]

@@ -17,7 +17,13 @@ from .modules.clock import clock_module
 from .modules.newsfeed import newsfeed_module
 from .modules.stocks import stocks_module
 from .modules.weather import weather_module
-from .utils import clean_string, format_time, prettydate
+from .utils import (
+    clean_string,
+    discover_flirror_modules,
+    discover_plugins,
+    format_time,
+    prettydate,
+)
 from .views import IndexView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
@@ -123,6 +129,12 @@ class Flirror(Flask):
             response["msg"] = msg
         abort(make_response(jsonify(response), status))
 
+    def register_plugins(self):
+        plugins = discover_plugins()
+        flirror_modules = discover_flirror_modules(plugins)
+        for fm in flirror_modules:
+            self.register_module(fm, url_prefix=f"/{fm.name}")
+
 
 def create_app(config=None, jinja_options=None):
     """
@@ -156,11 +168,18 @@ def create_app(config=None, jinja_options=None):
     # https://packaging.python.org/guides/creating-and-discovering-plugins/
     # TODO (felix): Prefix each module's URL with its name to avoid name clashes
     # between modules and all can simply use the same url_rule ("/").
-    app.register_module(clock_module, url_prefix="/clock")
-    app.register_module(weather_module, url_prefix="/weather")
-    app.register_module(calendar_module, url_prefix="/calendar")
-    app.register_module(newsfeed_module, url_prefix="/newsfeed")
-    app.register_module(stocks_module, url_prefix="/stocks")
+    # Register all standard modules
+    for module in [
+        clock_module,
+        weather_module,
+        calendar_module,
+        newsfeed_module,
+        stocks_module,
+    ]:
+        app.register_module(module, url_prefix=f"/{module.name}")
+
+    # Discover and register custom plugins
+    app.register_plugins()
 
     # Connect to the sqlite database
     # TODO (felix): Maybe we could drop the 'create_db' here?
