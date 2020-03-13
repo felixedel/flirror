@@ -17,6 +17,7 @@ happy about any contribution!
 **[Architecture](#architecture)** |
 **[Usage](#usage)** |
 **[Available Modules](#available-modules)** |
+**[Developing Custom Modules](#developing-custom-modules)** |
 **[Deploy on Raspberry](#deploy-flirror-on-a-raspberry-pi)** |
 **[Planned features and ideas](#planned-features-and-ideas)** |
 
@@ -115,7 +116,7 @@ parameters might look like the following:
 MODULES = [
     {
         "id": "weather-tile",
-        "type": "weather",
+        "module": "weather",
         "config": {
             "city": "My hometown",
             "api_key": "<your-openweathermap-api-key>",
@@ -170,6 +171,15 @@ the data for each one by invoking the respective crawler.
 
 ## Available Modules
 
+Modules provide the base functionality that is used by Flirror to show e.g. a
+clock or the current weather. Every module defines a view (which is visible in
+flirror-web) and a crawler that retrieves the actual data from an API or
+backend.
+
+Some modules may come without a crawler (like the clock module) but usually it's
+recommended to do any data retrieving / calculation in the crawler and use the
+view only to show the data.
+
 The following modules are available in flirror by default:
 
 * Clock
@@ -203,7 +213,7 @@ can be found in their [How to start](https://openweathermap.org/appid) section.
 | Option | Description
 |--------|------------
 | `api_key` | **Required** Your personal OpenWeather API key
-| `language` | **Required** The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilangual support](https://openweathermap.org/current#multi).
+| `language` | **Required** The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilingual support](https://openweathermap.org/current#multi).
 | `city` | **Required** The city to retrieve the weather information for.
 | `temp_unit` | **Required** The unit in which the results are returned from the API (and thus displayed in flirror).
 
@@ -233,7 +243,7 @@ can be found in their [Getting started guide](https://medium.com/alpha-vantage/g
 |--------|-------------|
 | `api_key` | **Required** Your personal Alpha Vantage API key
 | `symbols` | **Required** The list of equities you want to retrieve. Each element must be in the format `("<symbol>", "<display_name>")`
-| `mode` | One of `table` or `series` to display the stocks information in the selected format. **DEfault:** `table`
+| `mode` | One of `table` or `series` to display the stocks information in the selected format. **Default:** `table`
 
 ### News
 
@@ -249,7 +259,141 @@ overview about available formats which can be parsed.
 | `name` | **Required** The title to display over the news entries
 | `url` | **Required** The url pointing to the RSS feed
 
-## Deploy flirror on a Raspberry Pi
+## Developing Custom Modules
+Flirror provides a plugin mechanism using an extended version of Flask
+[Blueprints](https://flask.palletsprojects.com/en/1.1.x/blueprints/).
+
+The so called `FlirrorModules` provide some decorators and functions to register
+the necessary view and crawler for a module. Apart from that you could still
+utilize the whole Blueprint functionality to provide e.g. custom templates,
+filters and more.
+
+A simple module may consist of the following file structure:
+
+```
+flirror_awesome_module
+|-- __init__.py
+|-- templates/
+    |-- awesome_module/
+        |-- index.html
+```
+
+The `__init__.py` file contains the module's python code including the module
+definition itself.
+
+```python
+import time
+
+from flask import current_app
+
+from flirror.modules import FlirrorModule
+
+awesome_module = FlirrorModule(
+    "awesome_module", __name__, template_folder="templates"
+)
+
+
+@awesome_module.view()
+def get():
+    return current_app.basic_get(template_name="awesome_module/index.html")
+
+@awesome_module.crawler()
+def crawl(module_id, app, user_name):
+    awesome_data = {
+        "_timestamp": time.time(),
+        "message": f"Hello, '{user_name}",
+    }
+    app.store_module_data(crawler_id, awesome_data)
+
+
+FLIRROR_MODULE = awesome_module
+```
+
+A few notes on what's going on here:
+
+First, we create a new `FlirrorModule()` instance which contains all the
+necessary parameters of our custom module like its `name`, `import_path` and the
+`template_folder`. The latter one is necessary to make our custom template
+usable in Flirror.
+
+Once the module is defined, we can use the `@awesome_module.view()` decorator to
+register the module's view function in Flirror. Using this decorator will
+register a new route `/awesome_module/` on the underlying Flask application.
+Flirror-web will then request this route and provide the `module_id` as GET
+parameter. The helper function `basic_get()` will evaluate this GET parameter,
+look up the data which is stored in the database for this module_id and populate
+the data to the template provided via the `template_name` parameter. Finally, it
+returns the rendered template so that flirror-web can integrate it in its UI.
+
+To store the data in the database, we provide a crawler function decorated with
+`@awesome_module.crawler()`. This registers the function as crawler for this
+module in flirror. When invoking `flirror-crawler` this function will be
+called with a set of predefined parameters:
+* The `module_id` for which the function is called
+* The `app` (which is mainly used as a back-reference to get access to the
+  database)
+* All config values that the module provides. In our case we want to greet a
+  user whereby the `user_name` is configurable. Usually there is no need to
+  store the `user_name` in the database as we could also directly access it in
+  the view. It's just used like this to show the typical use case of view and
+  crawler.
+
+Finally, we expose our module as `FLIRROR_MODULE` so that it can be detected by
+Flirror.
+
+The `templates/awesome_module/index.html` file contains the view's HTML code in
+form of a [Jinja2](https://jinja.palletsprojects.com/en/2.11.x/) template. It
+might look redundant that the module names is specified again in the path to the
+template. That's necessary to avoid overriding templates of other modules. More
+information on this can be found in the
+[Templates](https://flask.palletsprojects.com/en/1.1.x/blueprints/#templates)
+section of Flask's Blueprint documentation.
+
+```html
+{% extends "module.html" %}
+
+{% block body %}
+<div class="card-body">
+    <div class="text-right">
+        <small>
+            <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
+        </small>
+    </div>
+    <h2>{{ module.data.message }}</h2>
+</div>
+{% endblock %}
+```
+
+To seamlessly include the module's view in the flirror-web UI, make sure to
+extend the `module.html` template and use `<div class="card-body">` as outer
+element in the body block.
+
+### Module Detection
+Flirror will try to detect installed plugins automatically if they follow a
+predefined naming schema. For each plugin found, Flirror will look up the
+provided flirror modules and register them on the app.
+
+To make your plugin discoverable by flirror, it must fulfil the following
+requirements:
+* The name of python package providing the custom module (or modules) must start
+  with `flirror_` (e.g. `flirror_awesome_module`).
+* The package must expose the modules via one of the following top-level
+  variables:
+
+  ```python
+  # To expose a single module, use
+  FLIRROR_MODULE = <my_awesome_module>
+  # If the plugin provides multiple modules, expose them via
+  FLIRROR_MODULES = [<my_awesome_module_1>, <my_awesome_module_2>]
+  ```
+* Each module must be a valid [FlirrorModule](https://github.com/felixedel/flirror/blob/master/flirror/modules/__init__.py#L8) instance.
+
+Flirror's standard modules are defined in the same manner like custom modules,
+thus you could take a closer look on their
+[source](https://github.com/felixedel/flirror/tree/master/flirror/modules) if
+you are interested in how you could develop a custom module.
+
+## Deploy Flirror on a Raspberry Pi
 
 ### Requirements
 

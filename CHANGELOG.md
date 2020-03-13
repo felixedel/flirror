@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Features
+- Flirror now provides a plugin mechanism that allows custom modules to be
+  developed and included. For more information take a look at the
+  [Developing Custom Modules](https://github.com/felixedel/flirror#developing-custom-modules) section
+  in the documentation.
+
 ### Deprecated
 - Change the config key `modules.type` to `modules.module`. This key is used to
   specify which module should be used for this element in the configuration
