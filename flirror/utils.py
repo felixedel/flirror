@@ -1,8 +1,12 @@
+import importlib
 import logging
+import pkgutil
 import re
 from datetime import datetime
 
 import arrow
+
+from flirror.modules import FlirrorModule
 
 
 LOGGER = logging.getLogger(__name__)
@@ -62,3 +66,89 @@ def clean_string(string):
     """
     string = str(string).strip().replace(" ", "_").replace("-", "_")
     return re.sub(r"(?u)[^-\w.]", "", string)
+
+
+def discover_plugins():
+    """
+    Discover installed flirror plugins following the naming schema 'fliror_*'.
+
+    Find all installed packages starting with 'flirror_' using the pkgutil
+    module and returns them.
+
+    For more information, see
+    https://packaging.python.org/guides/creating-and-discovering-plugins/
+    """
+    discovered_plugins = {
+        name: importlib.import_module(name)
+        for finder, name, ispkg in pkgutil.iter_modules()
+        if name.startswith("flirror_")
+    }
+
+    LOGGER.debug(
+        "Found the following flirror plugins: '%s'",
+        "', '".join(discovered_plugins.keys()),
+    )
+
+    return discovered_plugins
+
+
+def discover_flirror_modules(discovered_plugins):
+    """
+    Look up FlirroModule instances from a list of discovered plugins.
+
+    Search the provided modules for a variable named FLIRROR_MODULE and try to
+    load its value as flirror module. If the variable does not point to a valid
+    FlirrorModule instance, it will be ignored.
+
+    A plugin could also provide multiple flirror modules via the
+    FLIRROR_MODULES variable. In that case, each element will loaded as flirror
+    module. If the variable does not point to a valid FlirrorModule instance,
+    it will be ignored.
+
+    Returns a list of valid FlirrorModule instances.
+    """
+    all_discovered_flirror_modules = []
+    for package_name, package in discovered_plugins.items():
+        discovered_flirror_modules = []
+        # The automatic plugin discovery expects modules to be defined in a
+        # FLIRROR_MODULES or FLIRROR_MODULES variable.
+        # NOTE (felix): We could provide a fallback mechanism that checks
+        # every variable in the module to be an instance of FlirrorModule.
+        # However, I would not do so as this would only work for top-level
+        # variables and not for ones in submodules. Using predefined variable
+        # names allows the developers of the plugin to specify their modules
+        # even if they are defined in a submodule.
+
+        module = getattr(package, "FLIRROR_MODULE", None)
+        if module is not None:
+            if isinstance(module, FlirrorModule):
+                discovered_flirror_modules.append(module)
+            else:
+                LOGGER.warning(
+                    "Plugin '%s' provides a variable FLIRROR_MODULE, but it's not "
+                    "pointing to a valid FlirrorModule instance %s",
+                    package_name,
+                    module,
+                )
+
+        modules = getattr(package, "FLIRROR_MODULES", None)
+        if modules is not None:
+            for module in modules:
+                if isinstance(module, FlirrorModule):
+                    discovered_flirror_modules.append(module)
+                else:
+                    LOGGER.warning(
+                        "Plugin '%s' provides a variable FLIRROR_MODULES, but not all "
+                        "elements are pointing to a valid FlirrorModule instance %s",
+                        package_name,
+                        module,
+                    )
+
+        LOGGER.debug(
+            "Plugin '%s' provides the following flirror modules '%s'",
+            package_name,
+            "', '".join(fm.name for fm in discovered_flirror_modules),
+        )
+        all_discovered_flirror_modules.extend(discovered_flirror_modules)
+
+    return all_discovered_flirror_modules
