@@ -12,8 +12,8 @@
         $.ajax({
             // TODO Set timeout?
             type: 'GET',
-            // TODO (felix): Is there a way to automatically look up the endpoint
-            // independent of the method's name (with that it always must be get)
+            {# If the module is configured properly (using the view() decorator), it
+               should be reachable via /<module_name>/ #}
             url: '{{ module.type }}',
             data: {{ {"module_id": module.id, "output": "template"} | safe }},
             success: function (response) {

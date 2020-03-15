@@ -26,8 +26,8 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
 calendar_module = FlirrorModule("calendar", __name__, template_folder="templates")
 
-# TODO (felix): Currently, the only combination that works is "/" and get()
-@calendar_module.route("/")
+
+@calendar_module.view()
 def get():
     return current_app.basic_get("calendar/index.html", FLIRROR_OBJECT_KEY)
 

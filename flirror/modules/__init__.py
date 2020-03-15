@@ -9,7 +9,7 @@ class FlirrorModule(Blueprint):
     _crawler = None
 
     def crawler(self):
-        """Decorate a callable to register it as a crawler for this module"""
+        """Decorate a function to register it as a crawler for this module"""
 
         def decorator(f):
             self.register_crawler(f)
@@ -18,6 +18,22 @@ class FlirrorModule(Blueprint):
         return decorator
 
     def register_crawler(self, crawler_callable):
-        """Register a callable as crawler for this module"""
+        """Register a function as crawler for this module"""
 
         self._crawler = crawler_callable
+
+    def view(self, **options):
+        """
+        Decorate a function to register it as view for this module.
+
+        This is the same as Flask's route() decorator, but ensures that the
+        rule is always set to "/".
+        """
+
+        def decorator(f):
+            rule = "/"
+            endpoint = options.pop("endpoint", f.__name__)
+            self.add_url_rule(rule, endpoint, f, **options)
+            return f
+
+        return decorator

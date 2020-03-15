@@ -49,7 +49,7 @@ def weather_icon(icon_name):
     return WEATHER_ICONS.get(icon_name)
 
 
-@weather_module.route("/")
+@weather_module.view()
 def get():
     return current_app.basic_get(
         template_name="weather/index.html", flirror_object_key=FLIRROR_OBJECT_KEY

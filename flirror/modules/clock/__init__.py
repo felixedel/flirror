@@ -10,7 +10,7 @@ LOGGER = logging.getLogger(__name__)
 clock_module = FlirrorModule("clock", __name__, template_folder="templates")
 
 
-@clock_module.route("/")
+@clock_module.view()
 def get():
     # The clock module only uses a subset of the flirror.basic_get() method as
     # it does not need to access the database.

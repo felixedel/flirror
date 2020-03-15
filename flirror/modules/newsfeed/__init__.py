@@ -16,7 +16,7 @@ DEFAULT_MAX_ITEMS = 5
 newsfeed_module = FlirrorModule("newsfeed", __name__, template_folder="templates")
 
 
-@newsfeed_module.route("/")
+@newsfeed_module.view()
 def get():
     return current_app.basic_get(
         template_name="newsfeed/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
