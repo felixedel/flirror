@@ -56,7 +56,7 @@ def get():
     )
 
 
-@weather_module.crawler("weather-crawler")
+@weather_module.crawler()
 def crawl(crawler_id, app, api_key, language, city, temp_unit):
     WeatherCrawler(crawler_id, app, api_key, language, city, temp_unit).crawl()
 

@@ -27,7 +27,7 @@ def list_filter(list_of_dicts_to_filter, key):
     return [d[key] for d in list_of_dicts_to_filter]
 
 
-@stocks_module.crawler("stocks-crawler")
+@stocks_module.crawler()
 def crawl(crawler_id, app, api_key, symbols, mode="table"):
     ts = TimeSeries(key="YOUR_API_KEY")
     stocks_data = {"_timestamp": time.time(), "stocks": []}

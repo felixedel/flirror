@@ -23,7 +23,7 @@ def get():
     )
 
 
-@newsfeed_module.crawler("newsfeed-crawler")
+@newsfeed_module.crawler()
 def crawl(crawler_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
     LOGGER.info("Requesting news feed '%s' from '%s'", name, url)
 
