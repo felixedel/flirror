@@ -14,7 +14,7 @@
             type: 'GET',
             // TODO (felix): Is there a way to automatically look up the endpoint
             // independent of the method's name (with that it always must be get)
-            url: '{{ url_for("{}.get".format(module.type), _external=True) }}',
+            url: '{{ module.type }}',
             data: {{ {"module_id": module.id, "output": "template"} | safe }},
             success: function (response) {
                 // TODO Remove debug output
