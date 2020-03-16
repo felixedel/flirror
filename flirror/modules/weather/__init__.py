@@ -57,13 +57,13 @@ def get():
 
 
 @weather_module.crawler()
-def crawl(crawler_id, app, api_key, language, city, temp_unit):
-    WeatherCrawler(crawler_id, app, api_key, language, city, temp_unit).crawl()
+def crawl(module_id, app, api_key, language, city, temp_unit):
+    WeatherCrawler(module_id, app, api_key, language, city, temp_unit).crawl()
 
 
 class WeatherCrawler:
-    def __init__(self, crawler_id, app, api_key, language, city, temp_unit):
-        self.crawler_id = crawler_id
+    def __init__(self, module_id, app, api_key, language, city, temp_unit):
+        self.module_id = module_id
         self.app = app
         self.api_key = api_key
         self.language = language
@@ -100,7 +100,7 @@ class WeatherCrawler:
         # Store the crawl timestamp
         weather_data["_timestamp"] = now
 
-        self.app.store_module_data(self.crawler_id, FLIRROR_OBJECT_KEY, weather_data)
+        self.app.store_module_data(self.module_id, FLIRROR_OBJECT_KEY, weather_data)
 
     @property
     def owm(self):
