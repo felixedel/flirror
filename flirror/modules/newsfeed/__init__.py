@@ -16,14 +16,14 @@ DEFAULT_MAX_ITEMS = 5
 newsfeed_module = FlirrorModule("newsfeed", __name__, template_folder="templates")
 
 
-@newsfeed_module.route("/")
+@newsfeed_module.view()
 def get():
     return current_app.basic_get(
         template_name="newsfeed/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
     )
 
 
-@newsfeed_module.crawler("newsfeed-crawler")
+@newsfeed_module.crawler()
 def crawl(crawler_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
     LOGGER.info("Requesting news feed '%s' from '%s'", name, url)
 

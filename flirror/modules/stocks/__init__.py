@@ -15,7 +15,7 @@ FLIRROR_OBJECT_KEY = "module_stocks"
 stocks_module = FlirrorModule("stocks", __name__, template_folder="templates")
 
 
-@stocks_module.route("/")
+@stocks_module.view()
 def get():
     return current_app.basic_get(
         template_name="stocks/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
@@ -27,7 +27,7 @@ def list_filter(list_of_dicts_to_filter, key):
     return [d[key] for d in list_of_dicts_to_filter]
 
 
-@stocks_module.crawler("stocks-crawler")
+@stocks_module.crawler()
 def crawl(crawler_id, app, api_key, symbols, mode="table"):
     ts = TimeSeries(key="YOUR_API_KEY")
     stocks_data = {"_timestamp": time.time(), "stocks": []}

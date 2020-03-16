@@ -42,7 +42,9 @@ class Flirror(Flask):
 
     def register_module(self, module, **options):
         LOGGER.info("Register module '%s'", module.name)
-        self.register_blueprint(module, **options)
+        # Always prefix the module's endpoints with its name
+        url_prefix = f"/{module.name}"
+        self.register_blueprint(module, url_prefix=url_prefix, **options)
 
         # TODO (felix): If we want to register something beyond Flask's
         # blueprint capabilities, we could add a back-reference to the app in
@@ -133,7 +135,7 @@ class Flirror(Flask):
         plugins = discover_plugins()
         flirror_modules = discover_flirror_modules(plugins)
         for fm in flirror_modules:
-            self.register_module(fm, url_prefix=f"/{fm.name}")
+            self.register_module(fm)
 
 
 def create_app(config=None, jinja_options=None):
@@ -176,7 +178,7 @@ def create_app(config=None, jinja_options=None):
         newsfeed_module,
         stocks_module,
     ]:
-        app.register_module(module, url_prefix=f"/{module.name}")
+        app.register_module(module)
 
     # Discover and register custom plugins
     app.register_plugins()

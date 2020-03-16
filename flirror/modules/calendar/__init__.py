@@ -26,14 +26,13 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
 calendar_module = FlirrorModule("calendar", __name__, template_folder="templates")
 
-# TODO (felix): Currently, the only combination that works is "/" and get()
-@calendar_module.route("/")
+
+@calendar_module.view()
 def get():
     return current_app.basic_get("calendar/index.html", FLIRROR_OBJECT_KEY)
 
 
-# TODO (felix): The name is ignore and can be removed
-@calendar_module.crawler("calendar-crawler")
+@calendar_module.crawler()
 def crawl(crawler_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
 
     # TODO (felix): Get rid of this, it's only needed to store the oauth token

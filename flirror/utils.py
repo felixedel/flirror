@@ -139,7 +139,7 @@ def discover_flirror_modules(discovered_plugins):
                 else:
                     LOGGER.warning(
                         "Plugin '%s' provides a variable FLIRROR_MODULES, but not all "
-                        "elements are pointing to a valid FlirrorModule instance %s",
+                        "elements are pointing to a valid FlirrorModule instance: %s",
                         package_name,
                         module,
                     )
