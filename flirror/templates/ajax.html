@@ -14,7 +14,7 @@
             type: 'GET',
             {# If the module is configured properly (using the view() decorator), it
                should be reachable via /<module_name>/ #}
-            url: '{{ module.type }}',
+            url: '{{ module.name }}',
             data: {{ {"module_id": module.id, "output": "template"} | safe }},
             success: function (response) {
                 // TODO Remove debug output

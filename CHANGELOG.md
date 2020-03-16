@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Deprecated
+- Change the config key `modules.type` to `modules.module`. This key is used to
+  specify which module should be used for this element in the configuration
+  file. Renaming this key makes it more clear that one should specify the
+  module's name there and not some mysterious "type". The old version is still
+  supported, but will be removed in future versions.
+
 ## [v1.0.1] - 2020-02-28
 
 ### Notes

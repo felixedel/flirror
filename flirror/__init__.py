@@ -113,9 +113,8 @@ class Flirror(Flask):
         # Build template context and return template via JSON
         context = {
             "module": {
-                # TODO (felix): Is the type still needed here? We shouldn't do
-                # any further lookup on that.
-                "type": module_config["type"],
+                # TODO (felix): Remove this fallback in a later future version
+                "name": module_config.get("module") or module_config.get("type"),
                 "id": module_id,
                 "config": module_config["config"],
                 "display": module_config["display"],

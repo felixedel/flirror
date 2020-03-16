@@ -103,7 +103,7 @@ Each entry in the `MODULES` list accepts the following parameters:
 | Parameter | Description
 |-----------|------------
 | `id` | **Required** The ID to identify this module inside the application.
-| `type` | **Required** The name of the module to use for this tile. A list of available modules can be found [here](#available-modules)
+| `module` | **Required** The name of the module to use for this tile. A list of available modules can be found [here](#available-modules)
 | `config` | **Required** The configuration for the specific module. Some modules come up with a default configuration, but usually this is needed to for each module. For more details on how to configure the specific module, take a look at the module's configuration part in the [modules](#available-modules) section.
 | `crawler` | Crawler specific settings. This can be used to speficy e.g.the crawling interval for a specific module. For more details see the crawler config section.
 | `display` | Configure the `position` and reloading `time` of a module

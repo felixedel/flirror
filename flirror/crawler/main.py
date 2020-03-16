@@ -90,24 +90,25 @@ def crawl(ctx, module, periodic):
     # Look up crawlers from config file
     for crawler_config in crawler_configs:
         crawler_id = crawler_config.get("id")
-        crawler_type = crawler_config.get("type")
+        # TODO (felix): Remove this fallback in a later future version
+        crawler_name = crawler_config.get("module") or crawler_config.get("type")
         # TODO Error handling for wrong/missing keys
         LOGGER.info(
-            "Initializing crawler of type '%s' with id '%s'", crawler_type, crawler_id
+            "Initializing crawler of type '%s' with id '%s'", crawler_name, crawler_id
         )
 
         # Get crawler callable from module
-        crawler_module = app.modules.get(crawler_type)
+        crawler_module = app.modules.get(crawler_name)
         if not crawler_module:
             LOGGER.warning(
                 "Could not find any registered module '%s'. Skipping this crawler.",
-                crawler_type,
+                crawler_name,
             )
             continue
         crawler_callable = crawler_module._crawler
         if not crawler_callable:
             LOGGER.warning(
-                "Module '%s' does not provide any crawler. Skipping.", crawler_type
+                "Module '%s' does not provide any crawler. Skipping.", crawler_name
             )
             continue
 
