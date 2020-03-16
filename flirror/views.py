@@ -45,7 +45,7 @@ class IndexView(FlirrorMethodView):
         # The dictionary holding all necessary context data for the index
         # template. Here we have also place for overall meta data (like flirror
         # version or so).
-        ctx_data = {"modules": defaultdict(list)}
+        ctx_data = {"tiles": defaultdict(list)}
 
         config_modules = current_app.config.get("MODULES", [])
 
@@ -58,16 +58,17 @@ class IndexView(FlirrorMethodView):
         for position, module_configs in sort_pos_modules.items():
             for module_config in module_configs:
                 module_id = module_config.get("id")
-                module_type = module_config.get("type")
+                # TODO (felix): Remove this fallback in a later future version
+                module_name = module_config.get("module") or module_config.get("type")
                 # TODO Error handling for wrong/missing keys
 
                 # NOTE (felix): The index view will only ensure that the
                 # modules are positioned properly. The content of each tile
                 # will be loaded asynchronously via ajax.
-                ctx_data["modules"][position].append(
+                ctx_data["tiles"][position].append(
                     {
                         "id": module_id,
-                        "type": module_type,
+                        "name": module_name,
                         "config": module_config["config"],
                         "display": module_config["display"],
                     }

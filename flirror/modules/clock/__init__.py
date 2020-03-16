@@ -28,7 +28,7 @@ def get():
 
     context = {
         "module": {
-            "type": module_config["type"],
+            "module": "clock",
             "id": module_id,
             "config": module_config["config"],
         }
