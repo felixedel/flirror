@@ -28,7 +28,7 @@ def list_filter(list_of_dicts_to_filter, key):
 
 
 @stocks_module.crawler()
-def crawl(crawler_id, app, api_key, symbols, mode="table"):
+def crawl(module_id, app, api_key, symbols, mode="table"):
     ts = TimeSeries(key="YOUR_API_KEY")
     stocks_data = {"_timestamp": time.time(), "stocks": []}
 
@@ -89,4 +89,4 @@ def crawl(crawler_id, app, api_key, symbols, mode="table"):
             # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
             # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
 
-    app.store_module_data(crawler_id, FLIRROR_OBJECT_KEY, stocks_data)
+    app.store_module_data(module_id, FLIRROR_OBJECT_KEY, stocks_data)

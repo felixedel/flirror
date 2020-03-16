@@ -24,7 +24,7 @@ def get():
 
 
 @newsfeed_module.crawler()
-def crawl(crawler_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
+def crawl(module_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
     LOGGER.info("Requesting news feed '%s' from '%s'", name, url)
 
     news_data = {"_timestamp": time.time(), "news": []}
@@ -56,4 +56,4 @@ def crawl(crawler_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
             }
         )
 
-    app.store_module_data(crawler_id, FLIRROR_OBJECT_KEY, news_data)
+    app.store_module_data(module_id, FLIRROR_OBJECT_KEY, news_data)

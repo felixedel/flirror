@@ -89,36 +89,41 @@ def crawl(ctx, module, periodic):
     scheduler = SafeScheduler()
     # Look up crawlers from config file
     for crawler_config in crawler_configs:
-        crawler_id = crawler_config.get("id")
+        module_id = crawler_config.get("id")
         # TODO (felix): Remove this fallback in a later future version
-        crawler_name = crawler_config.get("module") or crawler_config.get("type")
+        module_name = crawler_config.get("module") or crawler_config.get("type")
         # TODO Error handling for wrong/missing keys
         LOGGER.info(
-            "Initializing crawler of type '%s' with id '%s'", crawler_name, crawler_id
+            "Initializing crawler of type '%s' with id '%s'", module_name, module_id
         )
 
         # Get crawler callable from module
-        crawler_module = app.modules.get(crawler_name)
+        crawler_module = app.modules.get(module_name)
         if not crawler_module:
             LOGGER.warning(
-                "Could not find any registered module '%s'. Skipping this crawler.",
-                crawler_name,
+                "Could not find any registered module '%s'. Skip crawling of module with "
+                "id '%s'.",
+                module_name,
+                module_id,
             )
             continue
         crawler_callable = crawler_module._crawler
         if not crawler_callable:
             LOGGER.warning(
-                "Module '%s' does not provide any crawler. Skipping.", crawler_name
+                "Module '%s' does not provide any crawler. Skip crawling of module with "
+                "id '%s'.",
+                module_name,
+                module_id,
             )
             continue
 
         # Create a copy of the function with prefilled arguments (id, config values)
         func = functools.partial(
-            crawler_callable, crawler_id=crawler_id, app=app, **crawler_config["config"]
+            crawler_callable, module_id=module_id, app=app, **crawler_config["config"]
         )
 
         interval_string = crawler_config.get("crawler", {}).get("interval", "5m")
-        scheduler.add_job(func, crawler_id, interval_string)
+        scheduler.add_job(func, module_id, interval_string)
 
     # Do the actual crawling - periodically or not
     if periodic:

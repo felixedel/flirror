@@ -33,11 +33,11 @@ def get():
 
 
 @calendar_module.crawler()
-def crawl(crawler_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
+def crawl(module_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
 
     # TODO (felix): Get rid of this, it's only needed to store the oauth token
     # in GoogleOAuth for the current module.
-    object_key = f"{FLIRROR_OBJECT_KEY}-{crawler_id}"
+    object_key = f"{FLIRROR_OBJECT_KEY}-{module_id}"
 
     try:
         credentials = GoogleOAuth(
@@ -110,7 +110,7 @@ def crawl(crawler_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
     all_events = sorted(all_events, key=lambda k: k["start"])
 
     event_data = {"_timestamp": now, "events": all_events[:max_items]}
-    app.store_module_data(crawler_id, FLIRROR_OBJECT_KEY, event_data)
+    app.store_module_data(module_id, FLIRROR_OBJECT_KEY, event_data)
 
 
 def _parse_event_data(event):
