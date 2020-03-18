@@ -12,12 +12,6 @@ from flirror.modules import FlirrorModule
 
 LOGGER = logging.getLogger(__name__)
 
-# TODO (felix): Maybe we should simply use the module's name (maybe even
-# __name__) instead of FLIRROR_OBJECT_KEY. Specifying a value for this only
-# makes sense in case we have multiple objects per module to be stored
-# independently of each other.
-FLIRROR_OBJECT_KEY = "module_weather"
-
 WEATHER_ICONS = {
     "01d": "wi wi-day-sunny",
     "02d": "wi wi-day-cloudy",
@@ -51,9 +45,7 @@ def weather_icon(icon_name):
 
 @weather_module.view()
 def get():
-    return current_app.basic_get(
-        template_name="weather/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
-    )
+    return current_app.basic_get(template_name="weather/index.html")
 
 
 @weather_module.crawler()
@@ -100,7 +92,7 @@ class WeatherCrawler:
         # Store the crawl timestamp
         weather_data["_timestamp"] = now
 
-        self.app.store_module_data(self.module_id, FLIRROR_OBJECT_KEY, weather_data)
+        self.app.store_module_data(self.module_id, weather_data)
 
     @property
     def owm(self):

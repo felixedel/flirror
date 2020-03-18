@@ -10,16 +10,12 @@ from flirror.modules import FlirrorModule
 
 LOGGER = logging.getLogger(__name__)
 
-FLIRROR_OBJECT_KEY = "module_stocks"
-
 stocks_module = FlirrorModule("stocks", __name__, template_folder="templates")
 
 
 @stocks_module.view()
 def get():
-    return current_app.basic_get(
-        template_name="stocks/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
-    )
+    return current_app.basic_get(template_name="stocks/index.html")
 
 
 @stocks_module.app_template_filter()
@@ -89,4 +85,4 @@ def crawl(module_id, app, api_key, symbols, mode="table"):
             # '2. Symbol': 'GOOGL', '3. Last Refreshed': '2019-10-04 16:00:00',
             # '4. Interval': '15min', '5. Output Size': 'Compact', '6. Time Zone': 'US/Eastern'}
 
-    app.store_module_data(module_id, FLIRROR_OBJECT_KEY, stocks_data)
+    app.store_module_data(module_id, stocks_data)

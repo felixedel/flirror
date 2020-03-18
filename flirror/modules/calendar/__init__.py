@@ -13,7 +13,6 @@ from flirror.modules import FlirrorModule
 
 LOGGER = logging.getLogger(__name__)
 
-FLIRROR_OBJECT_KEY = "module_calendar"
 DEFAULT_MAX_ITEMS = 5
 # TODO (felix): Maybe we could use this also as a fallback if no calendar from
 # the list matched.
@@ -29,7 +28,7 @@ calendar_module = FlirrorModule("calendar", __name__, template_folder="templates
 
 @calendar_module.view()
 def get():
-    return current_app.basic_get("calendar/index.html", FLIRROR_OBJECT_KEY)
+    return current_app.basic_get("calendar/index.html")
 
 
 @calendar_module.crawler()
@@ -37,7 +36,7 @@ def crawl(module_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
 
     # TODO (felix): Get rid of this, it's only needed to store the oauth token
     # in GoogleOAuth for the current module.
-    object_key = f"{FLIRROR_OBJECT_KEY}-{module_id}"
+    object_key = f"module.{module_id}.data"
 
     try:
         credentials = GoogleOAuth(
@@ -110,7 +109,7 @@ def crawl(module_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
     all_events = sorted(all_events, key=lambda k: k["start"])
 
     event_data = {"_timestamp": now, "events": all_events[:max_items]}
-    app.store_module_data(module_id, FLIRROR_OBJECT_KEY, event_data)
+    app.store_module_data(module_id, event_data)
 
 
 def _parse_event_data(event):
