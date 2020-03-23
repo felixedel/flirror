@@ -37,7 +37,7 @@ def populate_database(db):
     # re-defining those datasets in here allows us to keep the unit and CSS tests
     # independently of each other and change on without affecting the other.
     db.FlirrorObject(
-        key="module_weather-weather-frankfurt",
+        key="module.weather-frankfurt.data",
         value={
             "_timestamp": 1574874141.210646,
             "city": "Frankfurt, DE",
@@ -104,12 +104,12 @@ def populate_database(db):
     )
 
     db.FlirrorObject(
-        key="module_weather-weather-hamburg",
+        key="module.weather-hamburg.data",
         value={"_timestamp": 1574874141.210646, "other_keys": "are missing"},
     )
 
     db.FlirrorObject(
-        key="module_calendar-calendar-my",
+        key="module.calendar-my.data",
         value={
             "_timestamp": 1574874185.653769,
             "events": [
@@ -153,7 +153,7 @@ def populate_database(db):
     )
 
     db.FlirrorObject(
-        key="module_newsfeed-news-tagesschau",
+        key="module.news-tagesschau.data",
         value={
             "_timestamp": 1574874193.9532669,
             "news": [
@@ -180,7 +180,7 @@ def populate_database(db):
     )
 
     db.FlirrorObject(
-        key="module_stocks-stocks-series",
+        key="module.stocks-series.data",
         value={
             "_timestamp": 1574874186.4492302,
             "stocks": [
@@ -238,7 +238,7 @@ def populate_database(db):
     )
 
     db.FlirrorObject(
-        key="module_stocks-stocks-table",
+        key="module.stocks-table.data",
         value={
             "_timestamp": 1574874188.9645052,
             "stocks": [

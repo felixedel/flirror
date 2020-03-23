@@ -9,6 +9,16 @@
   module's name there and not some mysterious "type". The old version is still
   supported, but will be removed in future versions.
 
+- The naming convention for the key of the database entries changed from
+  `module_{module_name}-{module_id}` to `module.{module_id}.{object_key}`. This
+  kind of namespaces the data stored in the database for a specific module and
+  allows us to store multiple datasets per module by specifying a different
+  `object_key` (the default is `data`) when storing the data in the module's
+  crawler.
+
+  Due to this change, flirror won't find any existing data after the update and
+  all crawlers must be re-run to get a fresh set of data with the correct key.
+
 ## [v1.0.1] - 2020-02-28
 
 ### Notes

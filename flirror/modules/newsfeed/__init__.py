@@ -10,7 +10,6 @@ from flirror.modules import FlirrorModule
 
 LOGGER = logging.getLogger(__name__)
 
-FLIRROR_OBJECT_KEY = "module_newsfeed"
 DEFAULT_MAX_ITEMS = 5
 
 newsfeed_module = FlirrorModule("newsfeed", __name__, template_folder="templates")
@@ -18,9 +17,7 @@ newsfeed_module = FlirrorModule("newsfeed", __name__, template_folder="templates
 
 @newsfeed_module.view()
 def get():
-    return current_app.basic_get(
-        template_name="newsfeed/index.html", flirror_object_key=FLIRROR_OBJECT_KEY
-    )
+    return current_app.basic_get(template_name="newsfeed/index.html")
 
 
 @newsfeed_module.crawler()
@@ -56,4 +53,4 @@ def crawl(module_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
             }
         )
 
-    app.store_module_data(module_id, FLIRROR_OBJECT_KEY, news_data)
+    app.store_module_data(module_id, news_data)

@@ -52,32 +52,38 @@ class Flirror(Flask):
         # blueprint.register(self, options, first_registration)
         # https://github.com/pallets/flask/blob/master/src/flask/blueprints.py#L233
 
-    def basic_get(self, template_name, flirror_object_key):
+    def basic_get(self, template_name, object_key=None):
         module_id = request.args.get("module_id")
         try:
-            template = self.get_module_template(
-                module_id, template_name, flirror_object_key
-            )
+            template = self.get_module_template(module_id, template_name, object_key)
             return jsonify({"_template": template})
         except ModuleDataException as e:
             self.json_abort(400, str(e))
 
-    def store_module_data(self, module_id, flirror_object_key, data):
-        object_key = f"{flirror_object_key}-{module_id}"
-        store_object_by_key(self.extensions["database"], object_key, data)
+    def store_module_data(self, module_id, data, object_key=None):
+        # Use "data" as default object key
+        if object_key is None:
+            object_key = "data"
 
-    def get_module_data(self, module_id, flirror_object_key):
+        module_object_key = f"module.{module_id}.{object_key}"
+        store_object_by_key(self.extensions["database"], module_object_key, data)
+
+    def get_module_data(self, module_id, object_key=None):
         """
         Get the data for a specific module.
         This method can be used by both, views and other arbitrary code parts to
         retrieve the data for the module specified by the function arguments.
         """
 
-        object_key = f"{flirror_object_key}-{module_id}"
-        return get_object_by_key(self.extensions["database"], object_key)
+        # Use "data" as default object key
+        if object_key is None:
+            object_key = "data"
 
-    def get_module_template(self, module_id, template_name, flirror_object_key):
-        data = self.get_module_data(module_id, flirror_object_key)
+        module_object_key = f"module.{module_id}.{object_key}"
+        return get_object_by_key(self.extensions["database"], module_object_key)
+
+    def get_module_template(self, module_id, template_name, object_key=None):
+        data = self.get_module_data(module_id, object_key)
         context = self.get_template_context(module_id, data)
 
         return render_template(template_name, **context)
