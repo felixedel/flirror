@@ -396,6 +396,16 @@ you are interested in how you could develop a custom module.
 
 ## Deploy Flirror on a Raspberry Pi
 
+Although Flirror could simply be installed via `pip`, the recommended way to
+install it on a Raspberry Pi is via Docker. The main reason for this is that not
+all python dependencies are packaged for ARM and thus must be built from
+sources. This takes a lot of time (up to 60 minutes) especially for those using
+C extensions.
+
+[Flirror's Docker image](https://hub.docker.com/r/felixedel/flirror) already
+comes with all dependencies installed and you can directly start Flirror after
+pulling the image.
+
 ### Requirements
 
 * [Docker](https://www.docker.com/)
@@ -444,11 +454,8 @@ $ pipx install docker-compose
 ### Start flirror
 
 Both componenents can be started using the docker-compose file provided in
-`deploy/docker-compose.example.yaml`. You just need to change the `latest`
-tag of the image used for both services to `latest:armv7` since a Raspberry Pi
-is using arm architecture and that needs a dedicated docker image.
-
-Afterwards, simply run
+`deploy/docker-compose.example.yaml`. Just copy this file, change some of the
+volume mounts (if necessary) and run
 
 ```shell
 $ docker-compose up
