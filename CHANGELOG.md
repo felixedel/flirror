@@ -25,6 +25,14 @@
   Due to this change, flirror won't find any existing data after the update and
   all crawlers must be re-run to get a fresh set of data with the correct key.
 
+### Notes
+- The Flirror Docker image is now multi-architecture aware and can run on
+  amd64 and arm. Thus, no additional tag is necessary when pulling the image on
+  a Raspberry Pi.
+
+  As builds for ARM do not work on Docker Hub out of the box, the automated
+  image builds are deactivated for now.
+
 ## [v1.0.1] - 2020-02-28
 
 ### Notes

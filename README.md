@@ -19,6 +19,7 @@ happy about any contribution!
 **[Available Modules](#available-modules)** |
 **[Developing Custom Modules](#developing-custom-modules)** |
 **[Deploy on Raspberry](#deploy-flirror-on-a-raspberry-pi)** |
+**[Development](#development)** |
 **[Planned features and ideas](#planned-features-and-ideas)** |
 
 ---
@@ -263,7 +264,7 @@ overview about available formats which can be parsed.
 Flirror provides a plugin mechanism using an extended version of Flask
 [Blueprints](https://flask.palletsprojects.com/en/1.1.x/blueprints/).
 
-The so called `FlirrorModules` provide some decorators and functions to register
+The so called `FlirrorModule` provides some decorators and functions to register
 the necessary view and crawler for a module. Apart from that you could still
 utilize the whole Blueprint functionality to provide e.g. custom templates,
 filters and more.
@@ -319,7 +320,7 @@ usable in Flirror.
 Once the module is defined, we can use the `@awesome_module.view()` decorator to
 register the module's view function in Flirror. Using this decorator will
 register a new route `/awesome_module/` on the underlying Flask application.
-Flirror-web will then request this route and provide the `module_id` as GET
+Flirror-web will then request this route while providing the `module_id` as GET
 parameter. The helper function `basic_get()` will evaluate this GET parameter,
 look up the data which is stored in the database for this module_id and populate
 the data to the template provided via the `template_name` parameter. Finally, it
@@ -395,6 +396,16 @@ you are interested in how you could develop a custom module.
 
 ## Deploy Flirror on a Raspberry Pi
 
+Although Flirror could simply be installed via `pip`, the recommended way to
+install it on a Raspberry Pi is via Docker. The main reason for this is that not
+all python dependencies are packaged for ARM and thus must be built from
+sources. This takes a lot of time (up to 60 minutes) especially for those using
+C extensions.
+
+[Flirror's Docker image](https://hub.docker.com/r/felixedel/flirror) already
+comes with all dependencies installed and you can directly start Flirror after
+pulling the image.
+
 ### Requirements
 
 * [Docker](https://www.docker.com/)
@@ -443,11 +454,8 @@ $ pipx install docker-compose
 ### Start flirror
 
 Both componenents can be started using the docker-compose file provided in
-`deploy/docker-compose.example.yaml`. You just need to change the `latest`
-tag of the image used for both services to `latest:armv7` since a Raspberry Pi
-is using arm architecture and that needs a dedicated docker image.
-
-Afterwards, simply run
+`deploy/docker-compose.example.yaml`. Just copy this file, change some of the
+volume mounts (if necessary) and run
 
 ```shell
 $ docker-compose up
@@ -456,8 +464,16 @@ $ docker-compose up
 to start the web server and the crawler in periodic mode.
 
 With both services running we still need to open some browser to see the actual
-flirror UI. This can be done by executing the `helpers/start_gui.sh` helper
-script. Apart from starting chromium in full screen mode pointing to the running
+flirror UI. Therefore, you could download and execute the following helper
+script like so:
+
+```shell
+$ wget https://raw.githubusercontent.com/felixedel/flirror/master/helpers/start_gui.sh
+$ chmod u+x start_gui.sh
+$ ./start_gui.sh
+```
+
+Apart from starting chromium in full screen mode pointing to the running
 flirror-web instance inside the docker container, this script will also ensure
 that some necessary environment variables like `DISPLAY` are set and that the
 screen saver and energy saving mode of the X server are disabled - so the
@@ -475,6 +491,71 @@ and add the following line to `/home/pi/.config/lxsession/LXDE-pi/autostart`
 
 ```shell
 @unclutter -display :0 -noevents -grab
+```
+
+## Development
+
+### Use docker buildx for a multi-architecture build
+To use the Flirror docker image on a Raspberry Pi, it must be built for the ARM
+architecture. To not always utilize a Raspberry Pi itself to build the docker
+image for ARM, we could use docker's `buildx` command and run a
+multi-architecture build on Linux or Mac.
+
+When using [Docker for Mac](https://docs.docker.com/docker-for-mac/), the
+`buildx` command should already be available. You just have to enable the
+"experimental features" in the "Command Line" section of the application's
+settings.
+
+For Linux, you could use the [Getting started with Docker for Arm on Linux](https://www.docker.com/blog/getting-started-with-docker-for-arm-on-linux/)
+guide to install buildx.
+
+To test if the docker buildx command is available, simply run
+```shell
+$ docker buildx --help
+```
+
+To show the available platforms for which buildx can be utilized, run
+```shell
+$ docker buildx ls
+```
+
+Docker for Mac already comes with a few preinstalled platforms including
+`linux/arm/v7` (which we are going to use).
+
+For Linux, you first need to register the ARM executables via qemu. Information
+on how to achieve this can also be found in the guide mentioned above.
+
+Once everything is set, we can create a new builder instance which we will use
+for our multi-archtitecture build:
+
+```shell
+$ docker buildx create --name flirrorbuilder
+$ docker buildx use flirrorbuilder
+$ docker buildx inspect --bootstrap
+```
+
+This will download the necessary `buildkit` docker image and should show an
+output similar to the following if successful:
+
+```shell
+[+] Building 12.1s (1/1) FINISHED
+ => [internal] booting buildkit                                                                 12.1s
+ => => pulling image moby/buildkit:buildx-stable-1                                              11.0s
+ => => creating container buildx_buildkit_flirrorbuilder0                                        1.0s
+Name:   flirrorbuilder
+Driver: docker-container
+
+Nodes:
+Name:      flirrorbuilder0
+Endpoint:  unix:///var/run/docker.sock
+Status:    running
+Platforms: linux/amd64, linux/arm64, linux/riscv64, linux/ppc64le, linux/s390x, linux/386, linux/arm/v7, linux/arm/v6
+```
+
+Now we can use this builder to build the Flirror multi-architecture image with
+the following command:
+```shell
+$  docker buildx build --platform linux/arm,linux/amd64 -t felixedel/flirror:latest -f dockerfiles/flirror-Dockerfile --push .
 ```
 
 ## Planned features and ideas

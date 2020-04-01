@@ -1,29 +1,75 @@
-FROM python:3.8.1-alpine3.11
+# This Dockerfile uses a multi-stage build to keep the size of the final image
+# small and avoid unnecessary reinstallations of required packages.
+# https://docs.docker.com/develop/develop-images/multistage-build/
+FROM python:3.8.1-alpine3.11 as builder
 
 WORKDIR /opt
 
-# NOTE (felix): Originally, I wanted to build the docker image with the
-# released flirror version on PyPI. But, if we want to use automated docker
-# builds on docker hub, we might keep the installation from sources so we
-# are able to trigger builds whenever a change is merged to master (latest)
-# or a tag is pushed (concrete release version).
-# In the end it doesn't matter as the code-state is the same.
-COPY . /opt
+# Create a venv for all application dependencies, which we can copy later to the
+# final build stage and ensure that the venv is used for all python commands.
+# https://pythonspeed.com/articles/multi-stage-docker-python/
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Packages needed to build pillow
+# Since we didn't activate the venv but just added it to the PATH, we must tell
+# Poetry to not create a venv by its own.
+ENV POETRY_VIRTUALENVS_CREATE=false
+
+# Most of the python dependencies are not packaged for ARM and thus must be
+# built from source. This takes a lot of time (up to 60 minutes) especially
+# for the ones using C extensions.
+# To avoid unnecessary rebuilds/reinstallations of those dependencies, we copy
+# only the pyproject.toml and poetry.lock files in this step. This is the least
+# amount of files we can copy to reflect dependency changes in Flirror and to
+# install them via poetry. Once the dependencies are installed, we will copy
+# the whole directory and install Flirror in a separate step.
+COPY pyproject.toml poetry.lock /opt/
+
+# Install necessary packages to build python packages with C extensions
 RUN apk add --no-cache --virtual .build-deps \
+        # curl is needed to download the poetry installer
+        curl \
+        # These packages are needed to build the python depedencies with
+        # C extensions.
         build-base \
         libffi-dev \
         openssl-dev \
         python3-dev \
-        py-pip \
         jpeg-dev \
         zlib-dev \
-    # Upgrade pip, so we can use it directly to install flirror
-    && pip install --upgrade pip \
-    && pip install . \
+    # Install poetry and its dependencies independent from the application.
+    # Poetry will ensure that only necessary dependencies from the poetry.lock
+    # file are installed in the application's venv and thus might remove some of
+    # its own dependencies if it is installed in the same venv (or the global
+    # python env).
+    && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python \
+    # Install all necessary prod dependencies
+    && $HOME/.poetry/bin/poetry install -v --no-root --no-dev \
     # Delete build dependencies
     && apk del .build-deps
+
+# Now we copy the neccessary files and install Flirror itself
+COPY flirror /opt/flirror/
+COPY README.md /opt/
+RUN $HOME/.poetry/bin/poetry install -v --no-dev
+
+# TODO (felix): Enable automated docker builds for ARM architecture:
+# https://github.com/docker/hub-feedback/issues/1261
+# https://github.com/docker/hub-feedback/issues/1874
+
+
+#
+# Final stage
+#
+FROM python:3.8.1-alpine3.11
+
+WORKDIR /opt/
+
+# Copy the application files together with the application's venv (with all
+# python dependencies installed) from the builder stage and ensure that the
+# Flirror executable can be found in the application's venv.
+COPY --from=builder /opt /opt
+ENV PATH="/opt/venv/bin:$PATH"
 
 # gunicorn is running on port 8000 by default
 EXPOSE 8000
