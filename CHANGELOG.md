@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.1.0] - 2020-04-02
+
 ### Features
 - Flirror now provides a plugin mechanism that allows custom modules to be
   developed and included. For more information take a look at the
@@ -56,6 +58,7 @@
 
 Initial release
 
-[Unreleased]: https://github.com/felixedel/flirror/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/felixedel/flirror/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/felixedel/flirror/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/felixedel/flirror/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/felixedel/flirror/releases/tag/v1.0.0

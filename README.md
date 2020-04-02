@@ -322,9 +322,10 @@ register the module's view function in Flirror. Using this decorator will
 register a new route `/awesome_module/` on the underlying Flask application.
 Flirror-web will then request this route while providing the `module_id` as GET
 parameter. The helper function `basic_get()` will evaluate this GET parameter,
-look up the data which is stored in the database for this module_id and populate
-the data to the template provided via the `template_name` parameter. Finally, it
-returns the rendered template so that flirror-web can integrate it in its UI.
+look up the data which is stored in the database for this `module_id` and
+populate the data to the template provided via the `template_name` parameter.
+Finally, it returns the rendered template so that flirror-web can integrate it
+in its UI.
 
 To store the data in the database, we provide a crawler function decorated with
 `@awesome_module.crawler()`. This registers the function as crawler for this
@@ -344,9 +345,9 @@ Flirror.
 
 The `templates/awesome_module/index.html` file contains the view's HTML code in
 form of a [Jinja2](https://jinja.palletsprojects.com/en/2.11.x/) template. It
-might look redundant that the module names is specified again in the path to the
-template. That's necessary to avoid overriding templates of other modules. More
-information on this can be found in the
+might look redundant that the module's name is specified again in the path to
+the template. That's necessary to avoid overriding templates of other modules.
+More information on this can be found in the
 [Templates](https://flask.palletsprojects.com/en/1.1.x/blueprints/#templates)
 section of Flask's Blueprint documentation.
 
