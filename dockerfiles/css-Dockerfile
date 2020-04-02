@@ -1,26 +1,90 @@
-FROM backstopjs/backstopjs:4.4.2
+# This file is based on the BackstopJS Dockerfile
+# https://github.com/garris/BackstopJS/blob/899d92d904296fb8b2bba8bba48fb0c5ac2bc29b/docker/Dockerfile
+# To reduce the size of the resulting Docker image, we use a node-slim base
+# image with the latest node JS LTS version, group some of the commands
+# together in a single layer and add some cleanup.
+
+# Extract the Node JS version in an own "stage", so we don't have to specify it
+# multiple times.
+FROM node:12.16.2-buster-slim as node
+
+#
+# Backstop JS stage
+#
+FROM node as backstop
+# TODO (felix): Switching to Debian buster changed the font rendering in the
+# stocks series module. Not sure what's the exact reason for this, but we would
+# need to update the reference file.
+
+# Specify the BackstopJS version
+ENV BACKSTOPJS_VERSION="4.4.2"
+
+# Base packages for BackstopJS
+RUN apt-get update && apt-get install -y \
+    git \
+    software-properties-common \
+    sudo \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get -y clean
+
+# Install BackstopJS
+RUN sudo npm install -g --unsafe-perm=true --allow-root \
+    backstopjs@${BACKSTOPJS_VERSION}
+
+# Install Google Chrome
+RUN apt-get update && apt-get install -y \
+    gnupg2 \
+    wget \
+  && wget https://dl-ssl.google.com/linux/linux_signing_key.pub \
+  && apt-key add linux_signing_key.pub \
+  && add-apt-repository "deb http://dl.google.com/linux/chrome/deb/ stable main" \
+  && apt-get -y update && apt-get install -y \
+     google-chrome-stable \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get -y clean
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfontconfig \
+    libfreetype6 \
+    xfonts-cyrillic \
+    xfonts-scalable \
+    fonts-liberation \
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get -y clean
 
 WORKDIR /src
+
+FROM backstop
+
+#WORKDIR /src
 
 # Install python3.7 (flirror requires at least 3.6) and and appropriate pip
 # version.
 # Installing pip via apt is not the recommended way, but should be sufficient
 # as we are not installing multiple python versions and/or environments inside
 # this container.
-RUN add-apt-repository "deb http://ftp.de.debian.org/debian testing main" \
-  && apt-get -y update \
-  && apt-get -y -t testing install \
-    python3.6 \
+RUN apt-get -y update && apt-get install -y \
     python3-pip \
-  && apt-get -y install sqlite3 \
+    sqlite3 \
   && rm -rf /var/lib/apt/lists/* \
   && apt-get -y clean
 
 # Backstop JS expects everything in the /src directory
-COPY . /src
+# NOTE (felix): Similar to the flirror-Dockerfile, we could only copy relevant
+# files here, but that would just add complexity (adding the correct files and
+# don't forget any) and wouldn't reduce the image size much.
+COPY . /src/
 
 # Install flirror via poetry together with all (test) dependencies
 # As we are inside a Dockerfile, we don't need poetry to create a virtualenv
+# NOTE (felix): Installing poetry in the same python env like the application
+# itself is not recommended as poetry might remove some of its own dependencies
+# if they are not needed by the appliaction. However, as we don't do anything
+# else with poetry after installing the application it shouldn't harm anything
+# and keeps the image size smaller as we don't need to create an additional
+# python environment.
 RUN python3 -m pip install poetry \
   && POETRY_VIRTUALENVS_CREATE=false poetry install -v
 
