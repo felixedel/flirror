@@ -65,6 +65,9 @@ FROM python:3.8.1-alpine3.11
 
 WORKDIR /opt/
 
+# Install runtime dependencies for CPython library pillow
+RUN apk add --no-cache libjpeg
+
 # Copy the application files together with the application's venv (with all
 # python dependencies installed) from the builder stage and ensure that the
 # Flirror executable can be found in the application's venv.
