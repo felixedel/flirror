@@ -1,12 +1,7 @@
 version: "3"
 services:
   css-test:
-    build:
-      dockerfile: dockerfiles/css-Dockerfile
-      context: .
-    # Provide an image name to share the docker image between the
-    # services in this file
-    image: flirror-css
+    image: felixedel/flirror-css:latest
     ports:
       - "5000:5000"
     environment:
@@ -14,17 +9,14 @@ services:
       - FLIRROR_SETTINGS=/src/tests/testdata/test-settings.cfg
       - TEST_DB_SCRIPT=/src/tests/testdata/database-dump.sql
     volumes:
+      # Mount the local src dir into the container to test the current
+      # development version.
       - .:/src
     command: test
   css-reference:
     # TODO (felix): Is there a way to reuse the parameters
     # from the "css-test" service?
-    build:
-      dockerfile: dockerfiles/css-Dockerfile
-      context: .
-    # Provide an image name to share the docker image between the
-    # services in this file
-    image: flirror-css
+    image: felixedel/flirror-css:latest
     ports:
       - "5000:5000"
     environment:
@@ -32,6 +24,8 @@ services:
       - FLIRROR_SETTINGS=/src/tests/testdata/test-settings.cfg
       - TEST_DB_SCRIPT=/src/tests/testdata/database-dump.sql
     volumes:
+      # Mount the local src dir into the container to test the current
+      # development version.
       - .:/src
     command: reference
   web:
