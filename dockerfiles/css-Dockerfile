@@ -12,9 +12,6 @@ FROM node:12.16.2-buster-slim as node
 # Backstop JS stage
 #
 FROM node as backstop
-# TODO (felix): Switching to Debian buster changed the font rendering in the
-# stocks series module. Not sure what's the exact reason for this, but we would
-# need to update the reference file.
 
 # Specify the BackstopJS version
 ENV BACKSTOPJS_VERSION="4.4.2"
