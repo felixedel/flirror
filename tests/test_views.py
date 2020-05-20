@@ -65,7 +65,7 @@ def test_invalid_api(mock_app):
 
 
 def test_api_invalid_module_id(mock_app):
-    res = mock_app.get(f"/weather/?module_id=invalid-module&output=raw")
+    res = mock_app.get("/weather/?module_id=invalid-module&output=raw")
     assert res.status_code == 400
     assert res.json == {
         "error": 400,
