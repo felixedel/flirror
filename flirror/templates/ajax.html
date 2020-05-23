@@ -23,10 +23,12 @@
                 // Not necessary, as the card's content will be replaced anyways
                 //$("#{{ module.id }}-spinner").removeClass("fa-spin");
                 // Wait 30 seconds and call doAjax() again
-                setTimeout(
-                    doAjax_{{ func_suffix }},
-                    {{ module.display.refresh | default(30000) }}
-                );
+                {% if not settings.DEACTIVATE_AJAX_RELOADING %}
+                    setTimeout(
+                        doAjax_{{ func_suffix }},
+                        {{ module.display.refresh | default(30000) }}
+                    );
+                {% endif %}
             },
             error: function (response) {
                 console.log(response);

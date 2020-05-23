@@ -5,6 +5,7 @@ import click
 from flask import abort, Flask, jsonify, make_response, render_template, request
 from flask_assets import Bundle, Environment
 
+from . import default_settings
 from .database import (
     create_database_and_entities,
     get_object_by_key,
@@ -161,8 +162,8 @@ def create_app(config=None, jinja_options=None):
 
     # Load the config from the python file specified in the env vars and
     # overwrite values that are provided directly via arguments.
-    # TODO (felix): Add default settings, once we have some
     # TODO (felix): Validate config?
+    app.config.from_object(default_settings)
     app.config.from_envvar(FLIRROR_SETTINGS_ENV)
     if config is not None:
         app.config.from_mapping(config)

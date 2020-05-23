@@ -4,6 +4,8 @@ from collections import defaultdict, OrderedDict
 from flask import current_app, render_template
 from flask.views import MethodView
 
+SETTINGS_KEYS = ["DEACTIVATE_AJAX_RELOADING"]
+
 
 class FlirrorMethodView(MethodView):
     @property
@@ -28,7 +30,7 @@ class FlirrorMethodView(MethodView):
     def get_context(self, **kwargs):
         # Initialize context with meta fields that should be available on all pages
         # E.g. the flirror version or something like this
-        context = {}
+        context = {"settings": {k: current_app.config[k] for k in SETTINGS_KEYS}}
 
         # Add additionally provided kwargs
         context = {**context, **kwargs}
