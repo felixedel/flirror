@@ -3,16 +3,19 @@ import logging
 import pkgutil
 import re
 from datetime import datetime
+from typing import Dict, Iterable, Tuple, Union
+from types import ModuleType
 
 import arrow
 
+from flirror.exceptions import FlirrorConfigError
 from flirror.modules import FlirrorModule
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-def prettydate(date):
+def prettydate(date: Union[datetime, float]) -> str:
     """
     Return the relative timeframe between the given date and now.
     e.g. 'Just now', 'x days ago', 'x hours ago', ...
@@ -34,14 +37,13 @@ def prettydate(date):
     return arrow.get(date).humanize()
 
 
-def parse_interval_string(interval_string):
+def parse_interval_string(interval_string: str) -> Tuple[int, str]:
     # Split the string into <number><unit>
     pattern = re.compile(r"^(\d+)(\D+)$")
     match = pattern.match(interval_string)
 
     if not match:
-        LOGGER.error("Could not parse interval_string '%s'", interval_string)
-        return None, None
+        raise FlirrorConfigError(f"Could not parse interval string '{interval_string}'")
 
     interval = int(match.group(1))
     unit = match.group(2)
@@ -49,12 +51,12 @@ def parse_interval_string(interval_string):
     return interval, unit
 
 
-def format_time(timestamp, format):
+def format_time(timestamp: float, format: str) -> str:
     date = datetime.utcfromtimestamp(timestamp)
     return date.strftime(format)
 
 
-def clean_string(string):
+def clean_string(string: str) -> str:
     """
     Taken from Django:
     https://github.com/django/django/blob/e3d0b4d5501c6d0bc39f035e4345e5bdfde12e41/django/utils/text.py#L222
@@ -68,7 +70,7 @@ def clean_string(string):
     return re.sub(r"(?u)[^-\w.]", "", string)
 
 
-def discover_plugins():
+def discover_plugins() -> Dict[str, ModuleType]:
     """
     Discover installed flirror plugins following the naming schema 'fliror_*'.
 
@@ -92,7 +94,9 @@ def discover_plugins():
     return discovered_plugins
 
 
-def discover_flirror_modules(discovered_plugins):
+def discover_flirror_modules(
+    discovered_plugins: Dict[str, ModuleType]
+) -> Iterable[FlirrorModule]:
     """
     Look up FlirroModule instances from a list of discovered plugins.
 

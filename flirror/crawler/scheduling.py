@@ -4,7 +4,7 @@ from datetime import datetime
 
 from schedule import Scheduler
 
-from flirror.exceptions import CrawlerDataError
+from flirror.exceptions import CrawlerDataError, FlirrorConfigError
 from flirror.utils import parse_interval_string
 
 
@@ -52,11 +52,15 @@ class SafeScheduler(Scheduler):
     def add_job(self, job_func, job_id, interval_string):
         # Get interval from crawler config, parse it and call appropriate methods
         # in the schedule module
-
-        interval, unit = parse_interval_string(interval_string)
         LOGGER.info(
             "Adding job for crawler '%s' with interval '%s'", job_id, interval_string
         )
+        try:
+            interval, unit = parse_interval_string(interval_string)
+        except FlirrorConfigError as e:
+            LOGGER.error(str(e))
+            return
+
         unit_method = INTERVAL_METHODS.get(unit)
         if unit_method is None:
             LOGGER.error(

@@ -17,6 +17,7 @@ def test_add_job():
     scheduler.add_job(dummy_crawl, "crawl_5m", "5m")
     scheduler.add_job(dummy_crawl, "crawl_10m", "10m")
     scheduler.add_job(dummy_crawl, "crawl_1h", "1h")
+    scheduler.add_job(dummy_crawl, "crawl_invalid", "mmm")
 
     jobs = scheduler.jobs
     assert jobs[0].interval == 30

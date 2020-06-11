@@ -5,12 +5,18 @@ class CrawlerDataError(Exception):
 
 
 class GoogleOAuthError(Exception):
-    """Exception if the Google OAuth authencitaion failed."""
+    """Exception if the Google OAuth authentication failed."""
 
     pass
 
 
 class ModuleDataException(Exception):
     """Exeption if the data for a module could not be retrieved."""
+
+    pass
+
+
+class FlirrorConfigError(Exception):
+    """Exception if any config related value could not be evaluated."""
 
     pass
