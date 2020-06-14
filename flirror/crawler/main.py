@@ -11,7 +11,7 @@ from flirror.crawler.scheduling import SafeScheduler
 LOGGER = logging.getLogger(__name__)
 
 
-def configure_logger(verbosity):
+def configure_logger(verbosity: str) -> None:
     # Import root logger to apply the configuration to all module loggers
     from flirror.crawler import LOGGER
 
@@ -39,7 +39,7 @@ def configure_logger(verbosity):
     type=click.Choice(["debug", "info", "warning", "error"]),
 )
 @click.pass_context
-def main(ctx, verbosity):
+def main(ctx, verbosity: str) -> None:
     configure_logger(verbosity)
 
     app = create_app()
@@ -61,7 +61,7 @@ def main(ctx, verbosity):
     default=False,
 )
 @click.pass_context
-def crawl(ctx, module, periodic):
+def crawl(ctx, module: str, periodic: bool) -> None:
     LOGGER.info("Hello, Flirror!")
 
     app = ctx.obj["app"]

@@ -1,8 +1,10 @@
 import logging
 import time
+from typing import Dict, Optional
 
-from flask import current_app
+from flask import current_app, Response
 from pyowm import OWM
+from pyowm.weatherapi25.weather import Weather
 from pyowm.exceptions.api_call_error import APIInvalidSSLCertificateError
 from pyowm.exceptions.api_response_error import UnauthorizedError
 
@@ -39,22 +41,32 @@ weather_module = FlirrorModule("weather", __name__, template_folder="templates")
 
 # A template filter to find the correct weather icon by name
 @weather_module.app_template_filter()
-def weather_icon(icon_name):
+def weather_icon(icon_name: str) -> Optional[str]:
     return WEATHER_ICONS.get(icon_name)
 
 
 @weather_module.view()
-def get():
+def get() -> Response:
     return current_app.basic_get(template_name="weather/index.html")
 
 
 @weather_module.crawler()
-def crawl(module_id, app, api_key, language, city, temp_unit):
+def crawl(
+    module_id: str, app, api_key: str, language: str, city: str, temp_unit: str
+) -> None:
     WeatherCrawler(module_id, app, api_key, language, city, temp_unit).crawl()
 
 
 class WeatherCrawler:
-    def __init__(self, module_id, app, api_key, language, city, temp_unit):
+    def __init__(
+        self,
+        module_id: str,
+        app,
+        api_key: str,
+        language: str,
+        city: str,
+        temp_unit: str,
+    ):
         self.module_id = module_id
         self.app = app
         self.api_key = api_key
@@ -63,7 +75,7 @@ class WeatherCrawler:
         self.temp_unit = temp_unit
         self._owm = None
 
-    def crawl(self):
+    def crawl(self) -> None:
         try:
             obs = self.owm.weather_at_place(self.city)
         except UnauthorizedError as e:
@@ -95,14 +107,14 @@ class WeatherCrawler:
         self.app.store_module_data(self.module_id, weather_data)
 
     @property
-    def owm(self):
+    def owm(self) -> OWM:
         if self._owm is None:
             LOGGER.debug("Authenticating to OWM API")
             self._owm = OWM(API_key=self.api_key, language=self.language, version="2.5")
         return self._owm
 
     @staticmethod
-    def _parse_weather_data(weather, temp_unit, city):
+    def _parse_weather_data(weather: Weather, temp_unit: str, city: str) -> Dict:
         temp_dict = weather.get_temperature(unit=temp_unit)
         return {
             "city": city,

@@ -1,9 +1,10 @@
 import logging
 import time
 from datetime import datetime
+from typing import Any, Dict
 
 import feedparser
-from flask import current_app
+from flask import current_app, Response
 
 from flirror.exceptions import CrawlerDataError
 from flirror.modules import FlirrorModule
@@ -16,15 +17,17 @@ newsfeed_module = FlirrorModule("newsfeed", __name__, template_folder="templates
 
 
 @newsfeed_module.view()
-def get():
+def get() -> Response:
     return current_app.basic_get(template_name="newsfeed/index.html")
 
 
 @newsfeed_module.crawler()
-def crawl(module_id, app, url, name, max_items=DEFAULT_MAX_ITEMS):
+def crawl(
+    module_id: str, app, url: str, name: str, max_items: int = DEFAULT_MAX_ITEMS
+) -> None:
     LOGGER.info("Requesting news feed '%s' from '%s'", name, url)
 
-    news_data = {"_timestamp": time.time(), "news": []}
+    news_data: Dict[str, Any] = {"_timestamp": time.time(), "news": []}
 
     feed = feedparser.parse(url)
 

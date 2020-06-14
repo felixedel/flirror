@@ -1,5 +1,6 @@
 import abc
 from collections import defaultdict, OrderedDict
+from typing import Any, Dict
 
 from flask import current_app, render_template
 from flask.views import MethodView
@@ -8,27 +9,31 @@ from flask.views import MethodView
 class FlirrorMethodView(MethodView):
     @property
     @abc.abstractmethod
-    def endpoint(self):
+    def endpoint(self) -> str:
         pass
 
     @property
     @abc.abstractmethod
-    def rule(self):
+    def rule(self) -> str:
         pass
 
     @property
     @abc.abstractmethod
-    def template_name(self):
+    def template_name(self) -> str:
         pass
 
     @classmethod
+    # TODO (felix): mypy -> When type annotating this function, mypy complains
+    # about:
+    # Argument 1 to "add_url_rule" of "Flask" has incompatible type
+    # "Callable[[FlirrorMethodView], str]"; expected "str"
     def register_url(cls, app, **options):
         app.add_url_rule(cls.rule, view_func=cls.as_view(cls.endpoint), **options)
 
-    def get_context(self, **kwargs):
+    def get_context(self, **kwargs: Any) -> Dict[str, Any]:
         # Initialize context with meta fields that should be available on all pages
         # E.g. the flirror version or something like this
-        context = {}
+        context: Dict[str, Any] = {}
 
         # Add additionally provided kwargs
         context = {**context, **kwargs}
@@ -41,11 +46,11 @@ class IndexView(FlirrorMethodView):
     rule = "/"
     template_name = "index.html"
 
-    def get(self):
+    def get(self) -> str:
         # The dictionary holding all necessary context data for the index
         # template. Here we have also place for overall meta data (like flirror
         # version or so).
-        ctx_data = {"tiles": defaultdict(list)}
+        ctx_data: Dict[str, Any] = {"tiles": defaultdict(list)}
 
         config_modules = current_app.config.get("MODULES", [])
 
