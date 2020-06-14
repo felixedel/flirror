@@ -1,10 +1,11 @@
 import logging
 import time
 from datetime import datetime
+from typing import Dict, List
 
 import arrow
 import googleapiclient.discovery
-from flask import current_app
+from flask import current_app, Response
 from google.auth.exceptions import RefreshError
 
 from flirror.crawler.google_auth import GoogleOAuth
@@ -27,12 +28,14 @@ calendar_module = FlirrorModule("calendar", __name__, template_folder="templates
 
 
 @calendar_module.view()
-def get():
+def get() -> Response:
     return current_app.basic_get("calendar/index.html")
 
 
 @calendar_module.crawler()
-def crawl(module_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
+def crawl(
+    module_id: str, app, calendars: List[str], max_items: int = DEFAULT_MAX_ITEMS
+) -> None:
 
     # TODO (felix): Get rid of this, it's only needed to store the oauth token
     # in GoogleOAuth for the current module.
@@ -112,7 +115,7 @@ def crawl(module_id, app, calendars, max_items=DEFAULT_MAX_ITEMS):
     app.store_module_data(module_id, event_data)
 
 
-def _parse_event_data(event):
+def _parse_event_data(event: Dict) -> Dict:
     start = event["start"].get("dateTime")
     event_type = "time"
     if start is None:

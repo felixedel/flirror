@@ -3,11 +3,13 @@ import logging
 import os
 import time
 from io import BytesIO
+from typing import Dict, List, Optional
 
-import google.oauth2.credentials
 import qrcode
 import requests
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
+from pony.orm import Database
 
 from flirror.database import get_object_by_key, store_object_by_key
 from flirror.exceptions import GoogleOAuthError
@@ -23,23 +25,28 @@ class GoogleOAuth:
     # We could use the class object to store the active token in the session
     # and check this one first for expiry, before retrieving a new one and store
     # that in the database and session.
-    def __init__(self, database, scopes=None, module_object_key=None):
+    def __init__(
+        self,
+        database: Database,
+        scopes: Optional[List[str]] = None,
+        module_object_key: Optional[str] = None,
+    ) -> None:
         if scopes is None:
             scopes = []
         self.scopes = scopes
         self.database = database
         self.module_object_key = module_object_key
 
-    def get_credentials(self):
+    def get_credentials(self) -> Optional[Credentials]:
         token = self.authenticate()
         if token is None:
             LOGGER.warning("Authentication failed. Cannot retrieve calendar data")
-            return
+            return None
 
         flow = self._get_oauth_flow()
         # TODO To let google refresh the token, we must specify the
         #  refresh_token and the token_uri (which we don't have in this OAuth flow).
-        credentials = google.oauth2.credentials.Credentials(
+        credentials = Credentials(
             client_id=flow.client_config["client_id"],
             client_secret=flow.client_config["client_secret"],
             token=token,
@@ -47,7 +54,7 @@ class GoogleOAuth:
 
         return credentials
 
-    def authenticate(self):
+    def authenticate(self) -> Optional[str]:
         LOGGER.debug("Authenticating to Google calendar API")
         # Check if we already have a valid token
         LOGGER.debug("Check if we already have an access token")
@@ -72,7 +79,7 @@ class GoogleOAuth:
         # Hopefully, we got a token in any case now
         return token
 
-    def refresh_access_token(self, refresh_token):
+    def refresh_access_token(self, refresh_token: str) -> str:
         LOGGER.debug("Requesting a new access token using the last refresh token")
         # Use the refresh token to request a new access token
         flow = self._get_oauth_flow()
@@ -102,7 +109,7 @@ class GoogleOAuth:
         self._store_access_token(token_data)
         return token_data["access_token"]
 
-    def ask_for_access(self):
+    def ask_for_access(self) -> Optional[str]:
         # As the device code is only necessary for the initial token request,
         # we should do both in one go. Otherwise, there are too many edge cases
         # to cover and if something goes wrong or the user does not grant us
@@ -159,32 +166,33 @@ class GoogleOAuth:
                 },
             )
 
-        token_data = self.poll_for_initial_access_token(device)
-        return token_data["access_token"]
+        try:
+            token_data = self.poll_for_initial_access_token(device)
+            return token_data["access_token"]
+        except GoogleOAuthError:
+            LOGGER.exception("Could not retrieve access token")
+            return None
 
-    def poll_for_initial_access_token(self, device):
+    def poll_for_initial_access_token(self, device: Dict) -> Dict:
         # TODO Timeout, max_retries?
         # Theoretically, we can poll until the device code is expired (which is
         # 30 minutes)
         while time.time() < device["expires_in"]:
-            try:
-                now = time.time()
-                token_data = self._request_initial_access_token(device)
+            now = time.time()
+            token_data = self._request_initial_access_token(device)
+            if token_data is not None:
                 # Calculate an absolute expiry timestamp for simpler evaluation
                 token_data["expires_in"] += now
                 self._store_access_token(token_data)
                 return token_data
-            except requests.exceptions.HTTPError as e:
-                LOGGER.error(
-                    "Could not get initial access token. You might want "
-                    "to grant us permission first: %s",
-                    e,
-                )
-                # Should be around 5 secs
-                time.sleep(device["interval"])
+
+            # If we could not retrieve a token yet, wait (should be around 5
+            # secs)
+            time.sleep(device["interval"])
+
         raise GoogleOAuthError("Device is expired, please restart the application.")
 
-    def _request_initial_access_token(self, device):
+    def _request_initial_access_token(self, device: Dict) -> Optional[Dict]:
         # Use the device code for an initial token request
         flow = self._get_oauth_flow()
         data = {
@@ -193,16 +201,25 @@ class GoogleOAuth:
             "code": device["device_code"],
             "grant_type": "http://oauth.net/grant_type/device/1.0",
         }
-        res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
-        # We catch this in the caller method
-        res.raise_for_status()
+        try:
+            res = requests.post(self.GOOGLE_OAUTH_POLL_URL, data=data)
+            # We catch this in the caller method
+            res.raise_for_status()
+            result = res.json()
+        except requests.exceptions.HTTPError as e:
+            LOGGER.error(
+                "Could not get initial access token. You might want to grant us "
+                "permission first: %s",
+                e,
+            )
+            result = None
 
-        return res.json()
+        return result
 
-    def _store_access_token(self, token_data):
+    def _store_access_token(self, token_data: Dict) -> None:
         store_object_by_key(self.database, key="google_oauth_token", value=token_data)
 
-    def _get_oauth_flow(self):
+    def _get_oauth_flow(self) -> Flow:
         client_secret_file = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
         if client_secret_file is None:
             raise GoogleOAuthError(

@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Optional
 
 from pony.orm import Database, db_session, Json, ObjectNotFound, PrimaryKey, Required
 
@@ -6,11 +7,13 @@ from pony.orm import Database, db_session, Json, ObjectNotFound, PrimaryKey, Req
 LOGGER = logging.getLogger(__name__)
 
 
-# How to use separated databases for prod and testing:
-# https://github.com/ponyorm/pony/issues/32
+# TODO (felix): mypy -> Type annotating this method always results in mypy
+# complaining about: "error: Name 'db.Entity' is not defined"
 def create_database_and_entities(**db_params):
     db = Database()
 
+    # How to use separated databases for prod and testing:
+    # https://github.com/ponyorm/pony/issues/32
     class FlirrorObject(db.Entity):
         key = PrimaryKey(str)
         value = Required(Json)
@@ -28,7 +31,7 @@ def create_database_and_entities(**db_params):
 
 
 @db_session
-def store_object_by_key(db, key, value):
+def store_object_by_key(db: Database, key: str, value: Dict) -> None:
     # TODO Store timezone aware dates in the database. Most probably, we must
     # provide a custom JSON serializer to pony orm (how can we do that?) to
     # store datetime objects rather than plain timestamps in the database.
@@ -44,7 +47,7 @@ def store_object_by_key(db, key, value):
 
 
 @db_session
-def get_object_by_key(db, key):
+def get_object_by_key(db: Database, key: str) -> Optional[Dict]:
     try:
         LOGGER.debug("Getting object with key '%s' from database", key)
         return db.FlirrorObject[key].value
