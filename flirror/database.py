@@ -7,10 +7,8 @@ from pony.orm import Database, db_session, Json, ObjectNotFound, PrimaryKey, Req
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO (felix): mypy -> Type annotating this method always results in mypy
-# complaining about: "error: Name 'db.Entity' is not defined"
 def create_database_and_entities(**db_params):
-    db = Database()
+    db: Database = Database()
 
     # How to use separated databases for prod and testing:
     # https://github.com/ponyorm/pony/issues/32

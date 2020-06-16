@@ -63,7 +63,6 @@ class Flirror(Flask):
         # blueprint.register(self, options, first_registration)
         # https://github.com/pallets/flask/blob/master/src/flask/blueprints.py#L233
 
-    # TODO (felix): Mypy -> How to define the return value here?
     def basic_get(
         self, template_name: str, object_key: Optional[str] = None
     ) -> Response:
