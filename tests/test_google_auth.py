@@ -3,7 +3,6 @@ import time
 from unittest import mock
 
 import pytest
-import requests
 import requests_mock
 from freezegun import freeze_time
 
@@ -197,11 +196,7 @@ def test_poll_for_initial_access_token_retry(mock_google_env, mock_empty_databas
     # in this test.
     device = {"expires_in": time.time() + 3600, "interval": 0}
 
-    side_effects = [
-        requests.exceptions.HTTPError,
-        requests.exceptions.HTTPError,
-        {"expires_in": 3600},
-    ]
+    side_effects = [None, None, {"expires_in": 3600}]
 
     # Mock the first two responses to return errors, on the third call we will
     # get a result

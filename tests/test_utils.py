@@ -3,6 +3,7 @@ from datetime import datetime
 import pytest
 from freezegun import freeze_time
 
+from flirror.exceptions import FlirrorConfigError
 from flirror.modules import FlirrorModule
 from flirror.utils import discover_flirror_modules, parse_interval_string, prettydate
 
@@ -27,7 +28,10 @@ def test_parse_interval_string(interval_string, result):
 def test_parse_interval_string_failed(interval_string):
     # TODO (felix): These should not match either:
     # - "5 hours"
-    assert (None, None) == parse_interval_string(interval_string)
+    with pytest.raises(FlirrorConfigError) as excinfo:
+        parse_interval_string(interval_string)
+
+    assert "Could not parse interval string" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(

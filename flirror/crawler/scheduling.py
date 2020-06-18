@@ -1,10 +1,11 @@
 import logging
 import time
 from datetime import datetime
+from typing import Callable
 
 from schedule import Scheduler
 
-from flirror.exceptions import CrawlerDataError
+from flirror.exceptions import CrawlerDataError, FlirrorConfigError
 from flirror.utils import parse_interval_string
 
 
@@ -27,7 +28,7 @@ class SafeScheduler(Scheduler):
     In addition, it provides some method to create jobs based on a crawler configuration.
     """
 
-    def __init__(self, reschedule_on_failure=True):
+    def __init__(self, reschedule_on_failure: bool = True):
         """
         If reschedule_on_failure is True, jobs will be rescheduled for their
         next run as if they had completed successfully. If False, they'll run
@@ -49,14 +50,18 @@ class SafeScheduler(Scheduler):
             job.last_run = datetime.now()
             job._schedule_next_run()
 
-    def add_job(self, job_func, job_id, interval_string):
+    def add_job(self, job_func: Callable, job_id: str, interval_string: str) -> None:
         # Get interval from crawler config, parse it and call appropriate methods
         # in the schedule module
-
-        interval, unit = parse_interval_string(interval_string)
         LOGGER.info(
             "Adding job for crawler '%s' with interval '%s'", job_id, interval_string
         )
+        try:
+            interval, unit = parse_interval_string(interval_string)
+        except FlirrorConfigError as e:
+            LOGGER.error(str(e))
+            return None
+
         unit_method = INTERVAL_METHODS.get(unit)
         if unit_method is None:
             LOGGER.error(
@@ -64,11 +69,13 @@ class SafeScheduler(Scheduler):
                 "method.",
                 interval_string,
             )
-            return
+            return None
 
         self._add_job(interval, unit_method, job_id, job_func)
 
-    def _add_job(self, interval, unit_method_name, job_id, job_func):
+    def _add_job(
+        self, interval: int, unit_method_name: str, job_id: str, job_func: Callable
+    ) -> None:
         job = self.every(interval)
         # Add the job to the schedule
         getattr(job, unit_method_name).do(job_func).tag(job_id)

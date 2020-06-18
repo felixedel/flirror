@@ -1,8 +1,9 @@
 import logging
 import time
+from typing import Any, Dict, List, Tuple
 
 from alpha_vantage.timeseries import TimeSeries
-from flask import current_app
+from flask import current_app, Response
 from requests.exceptions import ConnectionError
 
 from flirror.exceptions import CrawlerDataError
@@ -14,19 +15,25 @@ stocks_module = FlirrorModule("stocks", __name__, template_folder="templates")
 
 
 @stocks_module.view()
-def get():
+def get() -> Response:
     return current_app.basic_get(template_name="stocks/index.html")
 
 
 @stocks_module.app_template_filter()
-def list_filter(list_of_dicts_to_filter, key):
+def list_filter(list_of_dicts_to_filter: List[Dict], key: str):
     return [d[key] for d in list_of_dicts_to_filter]
 
 
 @stocks_module.crawler()
-def crawl(module_id, app, api_key, symbols, mode="table"):
+def crawl(
+    module_id: str,
+    app,
+    api_key: str,
+    symbols: List[Tuple[int, int]],
+    mode: str = "table",
+) -> None:
     ts = TimeSeries(key="YOUR_API_KEY")
-    stocks_data = {"_timestamp": time.time(), "stocks": []}
+    stocks_data: Dict[str, Any] = {"_timestamp": time.time(), "stocks": []}
 
     # Get the data from the alpha vantage API
     for symbol, alias in symbols:

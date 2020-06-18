@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Callable
 
 from flask import Blueprint
 
@@ -11,18 +12,18 @@ class FlirrorModule(Blueprint):
     def crawler(self):
         """Decorate a function to register it as a crawler for this module"""
 
-        def decorator(f):
+        def decorator(f: Callable) -> Callable:
             self.register_crawler(f)
             return f
 
         return decorator
 
-    def register_crawler(self, crawler_callable):
+    def register_crawler(self, crawler_callable: Callable) -> None:
         """Register a function as crawler for this module"""
 
         self._crawler = crawler_callable
 
-    def view(self, **options):
+    def view(self, **options: Any) -> Callable:
         """
         Decorate a function to register it as view for this module.
 

@@ -1,8 +1,17 @@
 import logging
 import subprocess
+from typing import Any, Dict, Optional, Union
 
 import click
-from flask import abort, Flask, jsonify, make_response, render_template, request
+from flask import (
+    abort,
+    Flask,
+    jsonify,
+    make_response,
+    render_template,
+    request,
+    Response,
+)
 from flask_assets import Bundle, Environment
 
 from .database import (
@@ -12,6 +21,7 @@ from .database import (
 )
 from .exceptions import ModuleDataException
 from .helpers import make_error_handler
+from .modules import FlirrorModule
 from .modules.calendar import calendar_module
 from .modules.clock import clock_module
 from .modules.newsfeed import newsfeed_module
@@ -27,6 +37,7 @@ from .utils import (
 from .views import IndexView
 
 FLIRROR_SETTINGS_ENV = "FLIRROR_SETTINGS"
+DEFAULT_OBJECT_KEY = "data"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +51,7 @@ class Flirror(Flask):
         """
         return self.blueprints
 
-    def register_module(self, module, **options):
+    def register_module(self, module: FlirrorModule, **options: Any) -> None:
         LOGGER.info("Register module '%s'", module.name)
         # Always prefix the module's endpoints with its name
         url_prefix = f"/{module.name}"
@@ -52,23 +63,31 @@ class Flirror(Flask):
         # blueprint.register(self, options, first_registration)
         # https://github.com/pallets/flask/blob/master/src/flask/blueprints.py#L233
 
-    def basic_get(self, template_name, object_key=None):
+    def basic_get(
+        self, template_name: str, object_key: Optional[str] = None
+    ) -> Response:
         module_id = request.args.get("module_id")
+        if not module_id:
+            return self.json_abort(400, "Parameter 'module_id' is missing")
         try:
             template = self.get_module_template(module_id, template_name, object_key)
             return jsonify({"_template": template})
         except ModuleDataException as e:
-            self.json_abort(400, str(e))
+            return self.json_abort(400, str(e))
 
-    def store_module_data(self, module_id, data, object_key=None):
+    def store_module_data(
+        self, module_id: str, data: Dict[str, Any], object_key: Optional[str] = None
+    ) -> None:
         # Use "data" as default object key
         if object_key is None:
-            object_key = "data"
+            object_key = DEFAULT_OBJECT_KEY
 
         module_object_key = f"module.{module_id}.{object_key}"
         store_object_by_key(self.extensions["database"], module_object_key, data)
 
-    def get_module_data(self, module_id, object_key=None):
+    def get_module_data(
+        self, module_id: str, object_key: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Get the data for a specific module.
         This method can be used by both, views and other arbitrary code parts to
@@ -77,23 +96,29 @@ class Flirror(Flask):
 
         # Use "data" as default object key
         if object_key is None:
-            object_key = "data"
+            object_key = DEFAULT_OBJECT_KEY
 
         module_object_key = f"module.{module_id}.{object_key}"
         return get_object_by_key(self.extensions["database"], module_object_key)
 
-    def get_module_template(self, module_id, template_name, object_key=None):
+    def get_module_template(
+        self, module_id: str, template_name: str, object_key: Optional[str] = None
+    ) -> str:
         data = self.get_module_data(module_id, object_key)
         context = self.get_template_context(module_id, data)
 
         return render_template(template_name, **context)
 
-    def get_template_context(self, module_id, data):
+    def get_template_context(
+        self, module_id: str, data: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         # Get view specifc settings from config
-        module_config = [m for m in self.config.get("MODULES") if m["id"] == module_id]
+        module_configs = [
+            m for m in self.config.get("MODULES", {}) if m.get("id") == module_id
+        ]
 
-        if module_config:
-            module_config = module_config[0]
+        if module_configs:
+            module_config = module_configs[0]
         else:
             # TODO template/raw output?
             raise ModuleDataException(
@@ -130,20 +155,22 @@ class Flirror(Flask):
         }
         return context
 
-    def json_abort(self, status, msg=None):
-        response = {"error": status}
+    def json_abort(self, status: int, msg: Optional[str] = None) -> Response:
+        response: Dict[str, Union[str, int]] = {"error": status}
         if msg is not None:
             response["msg"] = msg
-        abort(make_response(jsonify(response), status))
+        return abort(make_response(jsonify(response), status))
 
-    def register_plugins(self):
+    def register_plugins(self) -> None:
         plugins = discover_plugins()
         flirror_modules = discover_flirror_modules(plugins)
         for fm in flirror_modules:
             self.register_module(fm)
 
 
-def create_app(config=None, jinja_options=None):
+def create_app(
+    config: Optional[Dict] = None, jinja_options: Optional[Any] = None
+) -> Flirror:
     """
     Load configuration file and initialize flirror app with necessary
     components like database and modules.
@@ -205,7 +232,9 @@ def create_app(config=None, jinja_options=None):
     return app
 
 
-def create_web(config=None, jinja_options=None):
+def create_web(
+    config: Optional[Dict] = None, jinja_options: Optional[Any] = None
+) -> Flirror:
     """
     Load the configuration file and initialize the flirror app with basic
     components plus everything that's necessary for the web app like jinja2
@@ -243,7 +272,7 @@ def create_web(config=None, jinja_options=None):
 # limitation.
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("gunicorn_options", nargs=-1, type=click.UNPROCESSED)
-def run_web(gunicorn_options):
+def run_web(gunicorn_options: Dict):
     # Start gunicorn to serve the flirror application
     cmd = ["gunicorn", "flirror:create_web()"]
 
