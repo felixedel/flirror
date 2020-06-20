@@ -455,8 +455,9 @@ $ pipx install docker-compose
 ### Start flirror
 
 Both componenents can be started using the docker-compose file provided in
-`deploy/docker-compose.example.yaml`. Just copy this file, change some of the
-volume mounts (if necessary) and run
+`deploy/docker-compose.example.yaml`. Just copy this file and name it
+`docker-compose.yaml`. If necessary, adapt (or remove) some of the volume mounts
+to your needs. Afterwards, you can run
 
 ```shell
 $ docker-compose up
