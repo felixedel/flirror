@@ -74,8 +74,8 @@ class IndexView(FlirrorMethodView):
                     {
                         "id": module_id,
                         "name": module_name,
-                        "config": module_config["config"],
-                        "display": module_config["display"],
+                        "config": module_config.get("config"),
+                        "display": module_config.get("display"),
                     }
                 )
 

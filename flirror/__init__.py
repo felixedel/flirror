@@ -147,8 +147,8 @@ class Flirror(Flask):
                 # TODO (felix): Remove this fallback in a later future version
                 "name": module_config.get("module") or module_config.get("type"),
                 "id": module_id,
-                "config": module_config["config"],
-                "display": module_config["display"],
+                "config": module_config.get("config"),
+                "display": module_config.get("display"),
                 "error": error,
                 "data": data,
             }
