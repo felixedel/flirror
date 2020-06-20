@@ -7,6 +7,11 @@
   `language`, so there is no need to specify them every time (unless those
   defaults doesn't suit you).
 
+### Fixes
+- Fixed a bug where Flirror was crashing if `config` or `display` where missing
+  in a module configuration, although documentation states that they are not
+  required.
+
 ## [v1.1.0] - 2020-04-02
 
 ### Features
