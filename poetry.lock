@@ -208,6 +208,18 @@ python = "<3.8"
 version = "*"
 
 [[package]]
+category = "dev"
+description = "Flake8 and pylama plugin that checks the ordering of import statements."
+name = "flake8-import-order"
+optional = false
+python-versions = "*"
+version = "0.18.1"
+
+[package.dependencies]
+pycodestyle = "*"
+setuptools = "*"
+
+[[package]]
 category = "main"
 description = "A simple framework for building complex web applications."
 name = "flask"
@@ -1001,7 +1013,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "4045006e784345d150cf53ffacbea65bb1ec3e74fe649af1b0dc95bed0d944f7"
+content-hash = "7324ece496785148211a8857ab70328ec90909376abe3eb281083561a903038e"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -1118,6 +1130,10 @@ filelock = [
 flake8 = [
     {file = "flake8-3.8.1-py2.py3-none-any.whl", hash = "sha256:6c1193b0c3f853ef763969238f6c81e9e63ace9d024518edc020d5f1d6d93195"},
     {file = "flake8-3.8.1.tar.gz", hash = "sha256:ea6623797bf9a52f4c9577d780da0bb17d65f870213f7b5bcc9fca82540c31d5"},
+]
+flake8-import-order = [
+    {file = "flake8-import-order-0.18.1.tar.gz", hash = "sha256:a28dc39545ea4606c1ac3c24e9d05c849c6e5444a50fb7e9cdd430fc94de6e92"},
+    {file = "flake8_import_order-0.18.1-py2.py3-none-any.whl", hash = "sha256:90a80e46886259b9c396b578d75c749801a41ee969a235e163cfe1be7afd2543"},
 ]
 flask = [
     {file = "Flask-1.1.2-py2.py3-none-any.whl", hash = "sha256:8a4fdd8936eba2512e9c85df320a37e694c93945b33ef33c89946a340a238557"},

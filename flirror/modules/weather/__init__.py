@@ -4,9 +4,9 @@ from typing import Dict, Optional
 
 from flask import current_app, Response
 from pyowm import OWM
-from pyowm.weatherapi25.weather import Weather
 from pyowm.exceptions.api_call_error import APIInvalidSSLCertificateError
 from pyowm.exceptions.api_response_error import UnauthorizedError
+from pyowm.weatherapi25.weather import Weather
 
 from flirror.exceptions import CrawlerDataError
 from flirror.modules import FlirrorModule

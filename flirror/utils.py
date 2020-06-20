@@ -3,8 +3,8 @@ import logging
 import pkgutil
 import re
 from datetime import datetime
-from typing import Dict, Iterable, Tuple, Union
 from types import ModuleType
+from typing import Dict, Iterable, Tuple, Union
 
 import arrow
 
