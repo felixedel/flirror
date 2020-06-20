@@ -1,4 +1,19 @@
-# Flirror - A smartmirror based on Flask
+<h1 align="center">Flirror - A smartmirror based on Flask</h1>
+
+<p align="center">
+  <a href="https://travis-ci.com/felixedel/flirror">
+    <img alt="Build Status" src="https://travis-ci.com/felixedel/flirror.svg?branch=master"/>
+  </a>
+  <a href="https://github.com/felixedel/flirror/blob/master/LICENSE">
+    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blueviolet"/>
+  </a>
+  <a href="https://pypi.org/project/flirror">
+    <img alt="PyPI" src="https://img.shields.io/pypi/v/flirror"/>
+  </a>
+  <a href="https://github.com/psf/black">
+    <img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"/>
+  </a>
+</p>
 
 Flirror is a modular smartmirror application developed in Python. It consists of
 a simple webserver based on [Flask](https://palletsprojects.com/p/flask/) which
