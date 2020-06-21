@@ -229,9 +229,9 @@ can be found in their [How to start](https://openweathermap.org/appid) section.
 | Option | Description
 |--------|------------
 | `api_key` | **Required** Your personal OpenWeather API key
-| `language` | **Required** The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilingual support](https://openweathermap.org/current#multi).
 | `city` | **Required** The city to retrieve the weather information for.
-| `temp_unit` | **Required** The unit in which the results are returned from the API (and thus displayed in flirror).
+| `language` | The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilingual support](https://openweathermap.org/current#multi). **Default:** `en`
+| `temp_unit` | The unit in which the results are returned from the API (and thus displayed in flirror). **Default:** `celsius`
 
 ### Calendar
 

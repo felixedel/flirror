@@ -35,6 +35,9 @@ WEATHER_ICONS = {
     "50n": "wi wi-dust",
 }
 
+DEFAULT_TEMP_UNIT = "celsius"
+DEFAULT_LANGUAGE = "en"
+
 # TODO (felix): Define some default values in FlirrorModule?
 weather_module = FlirrorModule("weather", __name__, template_folder="templates")
 
@@ -52,9 +55,14 @@ def get() -> Response:
 
 @weather_module.crawler()
 def crawl(
-    module_id: str, app, api_key: str, language: str, city: str, temp_unit: str
+    module_id: str,
+    app,
+    api_key: str,
+    city: str,
+    language: Optional[str] = None,
+    temp_unit: Optional[str] = None,
 ) -> None:
-    WeatherCrawler(module_id, app, api_key, language, city, temp_unit).crawl()
+    WeatherCrawler(module_id, app, api_key, city, language, temp_unit).crawl()
 
 
 class WeatherCrawler:
@@ -63,16 +71,16 @@ class WeatherCrawler:
         module_id: str,
         app,
         api_key: str,
-        language: str,
         city: str,
-        temp_unit: str,
+        language: Optional[str] = None,
+        temp_unit: Optional[str] = None,
     ):
         self.module_id = module_id
         self.app = app
         self.api_key = api_key
-        self.language = language
         self.city = city
-        self.temp_unit = temp_unit
+        self.language = language or DEFAULT_LANGUAGE
+        self.temp_unit = temp_unit or DEFAULT_TEMP_UNIT
         self._owm = None
 
     def crawl(self) -> None:
@@ -81,8 +89,8 @@ class WeatherCrawler:
         except UnauthorizedError as e:
             LOGGER.error("Unable to authenticate to OWM API")
             raise CrawlerDataError from e
-        # Despite the name, this exception seem to be raised if no connection is possible
-        # at all (e.g. no network/internet connection).
+        # Despite the name, this exception seems to be raised if no connection
+        # is possible at all (e.g. no network/internet connection).
         except APIInvalidSSLCertificateError:
             raise CrawlerDataError("Could not connect to OWM API")
 
