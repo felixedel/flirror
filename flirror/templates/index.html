@@ -37,6 +37,13 @@
                 {% endfor %}
             {% endif %}
         {% endfor %}
+        {% for module in unpositioned_tiles %}
+        <div class="col-6 align-items-stretch">
+            {# Define the modules container so it can be reloaded via ajax #}
+            <div id="{{ module.id }}" class="card dark"></div>
+            {% include "ajax.html" %}
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

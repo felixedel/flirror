@@ -50,34 +50,49 @@ class IndexView(FlirrorMethodView):
         # The dictionary holding all necessary context data for the index
         # template. Here we have also place for overall meta data (like flirror
         # version or so).
-        ctx_data: Dict[str, Any] = {"tiles": defaultdict(list)}
+        ctx_data: Dict[str, Any] = {
+            "tiles": defaultdict(list),
+            "unpositioned_tiles": [],
+        }
 
         config_modules = current_app.config.get("MODULES", [])
 
         # Group modules by position and sort positions in asc order
         pos_modules = defaultdict(list)
+        # Modules without position information will always be placed after the
+        # positioned modules.
+        unpos_modules = []
         for module in config_modules:
-            pos_modules[module["display"]["position"]].append(module)
+            pos = module.get("display", {}).get("position")
+            if pos is not None:
+                pos_modules[pos].append(module)
+            else:
+                unpos_modules.append(module)
         sort_pos_modules = OrderedDict(sorted(pos_modules.items()))
 
         for position, module_configs in sort_pos_modules.items():
             for module_config in module_configs:
-                module_id = module_config.get("id")
-                # TODO (felix): Remove this fallback in a later future version
-                module_name = module_config.get("module") or module_config.get("type")
-                # TODO Error handling for wrong/missing keys
+                ctx_data["tiles"][position].append(self._get_module_info(module_config))
 
-                # NOTE (felix): The index view will only ensure that the
-                # modules are positioned properly. The content of each tile
-                # will be loaded asynchronously via ajax.
-                ctx_data["tiles"][position].append(
-                    {
-                        "id": module_id,
-                        "name": module_name,
-                        "config": module_config["config"],
-                        "display": module_config["display"],
-                    }
-                )
+        for module_config in unpos_modules:
+            ctx_data["unpositioned_tiles"].append(self._get_module_info(module_config))
 
         context = self.get_context(**ctx_data)
         return render_template(self.template_name, **context)
+
+    @staticmethod
+    def _get_module_info(module_config):
+        module_id = module_config.get("id")
+        # TODO (felix): Remove this fallback in a later future version
+        module_name = module_config.get("module") or module_config.get("type")
+        # TODO Error handling for wrong/missing keys
+
+        # NOTE (felix): The index view will only ensure that the
+        # modules are positioned properly. The content of each tile
+        # will be loaded asynchronously via ajax.
+        return {
+            "id": module_id,
+            "name": module_name,
+            "config": module_config.get("config"),
+            "display": module_config.get("display"),
+        }

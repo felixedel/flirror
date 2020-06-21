@@ -123,7 +123,7 @@ Each entry in the `MODULES` list accepts the following parameters:
 | `module` | **Required** The name of the module to use for this tile. A list of available modules can be found [here](#available-modules)
 | `config` | **Required** The configuration for the specific module. Some modules come up with a default configuration, but usually this is needed to for each module. For more details on how to configure the specific module, take a look at the module's configuration part in the [modules](#available-modules) section.
 | `crawler` | Crawler specific settings. This can be used to speficy e.g.the crawling interval for a specific module. For more details see the crawler config section.
-| `display` | Configure the `position` and reloading `time` of a module
+| `display` | Configure display properties of the module. This accepts a dictionary with the following keys: `position` and `time`. <br/>The `position` can be used to specify in which order the modules are displayed in the flirror UI. All modules with will sorted by their position in ascending order. Modules without a position definition will be placed after the positioned ones.<br/> The `time` specifies the reloading time in milliseconds with which the module will be reloaded via an ajax call. The default time value is `30000`.
 
 An example configuration with at least one module with the minimum required
 parameters might look like the following:
@@ -229,9 +229,9 @@ can be found in their [How to start](https://openweathermap.org/appid) section.
 | Option | Description
 |--------|------------
 | `api_key` | **Required** Your personal OpenWeather API key
-| `language` | **Required** The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilingual support](https://openweathermap.org/current#multi).
 | `city` | **Required** The city to retrieve the weather information for.
-| `temp_unit` | **Required** The unit in which the results are returned from the API (and thus displayed in flirror).
+| `language` | The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilingual support](https://openweathermap.org/current#multi). **Default:** `en`
+| `temp_unit` | The unit in which the results are returned from the API (and thus displayed in flirror). **Default:** `celsius`
 
 ### Calendar
 

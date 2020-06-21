@@ -32,7 +32,7 @@ def get() -> Response:
         "module": {
             "module": "clock",
             "id": module_id,
-            "config": module_config["config"],
+            "config": module_config.get("config"),
         }
     }
     data = {"_template": render_template("clock/index.html", **context)}
