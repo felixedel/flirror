@@ -12,6 +12,9 @@
   in a module configuration, although documentation states that they are not
   required.
 
+## Deprecated
+- Drop support for Python 3.6 The minimum required Python version is now 3.7.
+
 ## [v1.1.0] - 2020-04-02
 
 ### Features
