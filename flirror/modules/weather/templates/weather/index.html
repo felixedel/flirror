@@ -7,7 +7,11 @@
             <i id="{{ module.id }}-spinner" class="fas fa-sync-alt"></i> {{ module.data._timestamp | prettydate }}
         </small>
     </div>
-    <h3><strong>{{ module.data.city }}</strong></h3>
+        {% if module.data.city %}
+        <h3><strong>{{ module.data.city }}</strong></h3>
+        {% else %}
+        <h3><strong>{{ module.data.lat }}, {{ module.data.lon }}</strong></h3>
+        {% endif %}
     <p class="card-text">
         <span class="mr-3">{{ module.data.date | format_time("%A") | upper }}</span>
         {{ module.data.date | format_time("%b %d, %Y")}}

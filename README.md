@@ -223,15 +223,18 @@ forecast for the next six days. The weather information is retrieved from
 [OpenWeather](https://openweathermap.org/), so an OpenWeather API key is
 necessary to access those information. Information on how to get a free API key
 can be found in their [How to start](https://openweathermap.org/appid) section.
+Flirror is using the [One Call API](https://openweathermap.org/api/one-call-api).
 
 #### Configuration
 
 | Option | Description
 |--------|------------
 | `api_key` | **Required** Your personal OpenWeather API key
-| `city` | **Required** The city to retrieve the weather information for.
+| `city` | The city to retrieve the weather information for. **Note:** In case the `lat` and `lon` values are provided, the city will only be used to display the weather information. If no lat/lon values are provided, flirror will try to look them up from OpenWeather for the given city. Please note that this does not work for all cities. If you face any issues with that, please specify the `lat` and `lon` parameters directly.
+| `lat` | The latitude value of the position to retrieve the weather information for.
+| `lon` | The longitude value of the position to retrieve the weather information for.
 | `language` | The language in which the results are returned from the API (and thus displayd in flirror). For a list of available language codes, please refer to the [OpenWeather multilingual support](https://openweathermap.org/current#multi). **Default:** `en`
-| `temp_unit` | The unit in which the results are returned from the API (and thus displayed in flirror). **Default:** `celsius`
+| `temp_unit` | The unit in which the results are returned from the API (and thus displayed in flirror). Possible values are `fahrenheit`, `celsius` and `kelvin`. **Default:** `celsius`
 
 ### Calendar
 

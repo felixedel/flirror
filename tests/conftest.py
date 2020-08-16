@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -9,6 +10,17 @@ from flirror import create_web
 from flirror.database import create_database_and_entities
 
 FIXTURE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testdata")
+
+
+# TODO (felix): Does this need to be in a function scope?
+@pytest.fixture(scope="function")
+def load_fixture_file():
+    def _load_fixture_file(filepath):
+        with open(os.path.join(FIXTURE_DIR, filepath)) as fixture_file:
+            fixture_content = json.load(fixture_file)
+        return fixture_content
+
+    return _load_fixture_file
 
 
 @pytest.fixture(scope="function")

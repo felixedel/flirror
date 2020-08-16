@@ -82,7 +82,10 @@ def test_crawl_module(mock_env):
 
     expected_log_fragments = [
         "Initializing crawler of type 'weather' with id 'weather-frankfurt'",
-        "Unable to authenticate to OWM API",
+        (
+            "Could not find 'Frankfurt, DE' in city registry. Please specify "
+            "the corresponding lat/lon values directly in the module's config"
+        ),
         "Execution of job '{'weather-frankfurt'}' failed",
     ]
 
