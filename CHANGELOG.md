@@ -6,11 +6,26 @@
 - The weather module now comes with default values for `temp_unit` and
   `language`, so there is no need to specify them every time (unless those
   defaults doesn't suit you).
+- The weather module now uses OpenWeather's
+  [One Call API](https://openweathermap.org/api/one-call-api) to retrieve the
+  weather information. This was done because OpenWeather changed their
+  subscription model and the forecast API (which was used before) is no longer
+  available for free accounts.
+- The weather module now supports retrieving weather information for given geo
+  coordinates in form of `lat` and `lon` values.
 
 ### Fixes
 - Fixed a bug where Flirror was crashing if `config` or `display` where missing
   in a module configuration, although documentation states that they are not
   required.
+
+## Deprecated
+- Drop support for Python 3.6. The minimum required Python version is now 3.7.
+- Retrieving the weather information directly for a city might not work in all
+  cases due to the switch to the One Call API. If you face any issues, please
+  specify the lat/lon values for the city instead. Have a look at the
+  [Weather module's documentation](https://github.com/felixedel/flirror#weather)
+  for more detailed information.
 
 ## [v1.1.0] - 2020-04-02
 

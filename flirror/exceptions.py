@@ -4,6 +4,12 @@ class CrawlerDataError(Exception):
     pass
 
 
+class CrawlerConfigError(Exception):
+    """Exception if a crawler is not configured correctly."""
+
+    pass
+
+
 class GoogleOAuthError(Exception):
     """Exception if the Google OAuth authentication failed."""
 

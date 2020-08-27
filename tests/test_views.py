@@ -10,8 +10,8 @@ def test_template_invalid(mock_app):
     with pytest.raises(UndefinedError) as excinfo:
         mock_app.get("/weather/?module_id=weather-hamburg&output=template")
 
-    # City is the first variable that is used within the template
-    assert "Variable 'city' is not defined" == str(excinfo.value)
+    # lat is the first variable that is used within the template
+    assert "Variable 'lat' is not defined" == str(excinfo.value)
 
 
 def test_weather_api_template(mock_app):
